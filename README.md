@@ -9,6 +9,13 @@ the share of the move it **cannot** explain. Built phase by phase per `ROADMAP.m
 **Explanation layer is deterministic Jinja templates only — no LLM anywhere.** Not
 investment advice.
 
+![Meridian dashboard — ranked pattern scanner, evidence card with driver attribution + unexplained residual + invalidation, and the EOD postmortem](docs/dashboard.png)
+
+*The local dashboard (`meridian serve`): ranked scanner, a "why is it moving" card with
+the partial-order evidence timeline, driver attribution that sums with the unexplained
+residual to 100%, an invalidation line, and the EOD postmortem — all rendered from the
+structured evidence object, no LLM.*
+
 ## Quickstart
 ```bash
 python -m venv .venv && source .venv/bin/activate
