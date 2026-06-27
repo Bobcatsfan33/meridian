@@ -1,0 +1,18 @@
+# Dealer gamma squeeze (ROADMAP §10 — the differentiator). Mechanical, dealer-hedging
+# driven. NO thresholds here: ShortGamma/SpotIntoStrike/IVExpansion abnormality and
+# the wall distances are all graded in L1; legs are structural and abnormality-weighted.
+id: gamma_squeeze
+version: "1"
+description: Dealers short gamma into a strike cluster, IV confirms hedging, price expands (mechanical).
+roles:
+  G: {family: dealer_pos, event_type: ShortGamma}
+  K: {family: dealer_pos, event_type: SpotIntoStrike}
+  V: {family: dealer_pos, event_type: IVExpansion}
+  P: {family: price_volume}
+legs:
+  - {type: present, role: G}        # dealers net short gamma
+  - {type: present, role: K}        # spot pressed into a gamma strike cluster
+  - {type: present, role: V}        # IV lifts -> hedging, not information
+  - {type: present, role: P}        # the price expansion itself
+  - {type: concurrent, a: G, b: K}  # short gamma AND into-strike together
+  - {type: concurrent, a: K, b: P}  # into-strike concurrent with the move

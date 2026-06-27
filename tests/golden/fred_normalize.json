@@ -1,0 +1,21 @@
+[
+  {
+    "confidence": 0.97,
+    "event_id": "evt_3ca1d12d5753e9f5c547",
+    "event_time": "2026-06-26T20:00:00+00:00",
+    "event_type": "MacroPrint",
+    "family": "macro",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 63000.0,
+    "parent_event_id": null,
+    "payload": {
+      "description": "10Y Treasury yield",
+      "series_id": "DGS10",
+      "value": 4.41
+    },
+    "related_symbols": [],
+    "sector": null,
+    "source": "fred",
+    "ticker": "DGS10"
+  }
+]

@@ -1,0 +1,20 @@
+symbol,role,description
+SPY,index,S&P 500
+QQQ,index,Nasdaq-100
+IWM,index,Russell 2000 (breadth)
+DIA,index,Dow Jones
+XLK,sector,Information Technology
+XLF,sector,Financials
+XLV,sector,Health Care
+XLY,sector,Consumer Discretionary
+XLP,sector,Consumer Staples
+XLE,sector,Energy
+XLI,sector,Industrials
+XLB,sector,Materials
+XLU,sector,Utilities
+XLRE,sector,Real Estate
+XLC,sector,Communication Services
+SMH,theme,Semiconductors
+^VIX,macro,Volatility index
+^TNX,macro,10Y Treasury yield
+DX-Y.NYB,macro,US Dollar index

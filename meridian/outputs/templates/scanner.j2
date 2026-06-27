@@ -1,0 +1,7 @@
+PATTERN SCANNER — {{ date }}  ({{ n }} names)
+Not investment advice. Every read carries an unexplained residual + an invalidation line.
+
+{{ '%-7s'|format('TICKER') }} {{ '%8s'|format('MOVE') }}  {{ '%-18s'|format('PATTERN') }} {{ '%-8s'|format('CONF') }} {{ '%6s'|format('RESID') }}  INITIATING EVENT
+{% for e in rows %}
+{{ '%-7s'|format(e.ticker) }} {{ '%8s'|format(e.move_pct | spct) }}  {{ '%-18s'|format(e.pattern.id) }} {{ '%-8s'|format(e.confidence.tier) }} {{ '%6s'|format(e.unexplained_residual | pct) }}  {{ e.timeline[0].label if e.timeline else '—' }}
+{% endfor %}

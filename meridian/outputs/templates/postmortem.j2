@@ -1,0 +1,36 @@
+════════════════════════════════════════════════════════════════════════════
+ MERIDIAN — EOD POSTMORTEM  {{ date }}
+ Regime: {{ regime_label or '—' }}   tags: {{ regime_tags | join(', ') if regime_tags else '—' }}
+ Names explained: {{ n_explained }}   Not investment advice.
+════════════════════════════════════════════════════════════════════════════
+
+PATTERN SCOREBOARD (what fired, how complete, how much it left unexplained)
+{% for p in scoreboard %}
+  - {{ '%-18s'|format(p.pattern) }} fired {{ '%4d'|format(p.count) }}   mean completeness {{ p.mean_completeness | pct }}   mean residual {{ p.mean_residual | pct }}
+{% endfor %}
+{% if not scoreboard %}
+  (no firings)
+{% endif %}
+
+TOP MECHANICAL / FLOW-LIKE MOVES (options-led proxy — no catalyst)
+{% for e in flow_like %}
+  {{ '%-7s'|format(e.ticker) }} {{ e.move_pct | spct }}  conf {{ e.confidence.tier }}  residual {{ e.unexplained_residual | pct }}
+      invalidation: {{ e.invalidation }}
+{% else %}
+  (none)
+{% endfor %}
+
+PRICE-BEFORE-NEWS (price led the headline — possible information leak)
+{% for e in price_before_news %}
+  {{ '%-7s'|format(e.ticker) }} {{ e.move_pct | spct }}  conf {{ e.confidence.tier }}  residual {{ e.unexplained_residual | pct }}
+{% else %}
+  (none on this session — needs intraday price events to fire reliably)
+{% endfor %}
+
+SECTOR CONTAGION (moved with the sector basket, no company catalyst)
+{% for e in sympathy %}
+  {{ '%-7s'|format(e.ticker) }} {{ e.move_pct | spct }}  conf {{ e.confidence.tier }}  residual {{ e.unexplained_residual | pct }}
+{% else %}
+  (none)
+{% endfor %}
+════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,68 @@
+[
+  {
+    "confidence": 0.95,
+    "event_id": "evt_dbd65fcb2270f6f62a11",
+    "event_time": "2026-06-26T20:00:00+00:00",
+    "event_type": "DailyBar",
+    "family": "price_volume",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 63000.0,
+    "parent_event_id": null,
+    "payload": {
+      "close": 283.78,
+      "high": 285.95,
+      "low": 274.21,
+      "open": 275.0,
+      "role": "stock",
+      "volume": 261693600
+    },
+    "related_symbols": [],
+    "sector": "Information Technology",
+    "source": "yfinance",
+    "ticker": "AAPL"
+  },
+  {
+    "confidence": 0.95,
+    "event_id": "evt_fa33f198d10b96da881a",
+    "event_time": "2026-06-26T20:00:00+00:00",
+    "event_type": "ETFBar",
+    "family": "sector_peer",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 63000.0,
+    "parent_event_id": null,
+    "payload": {
+      "close": 251.5,
+      "high": 252.0,
+      "low": 249.0,
+      "open": 250.0,
+      "role": "sector",
+      "volume": 8000000
+    },
+    "related_symbols": [],
+    "sector": null,
+    "source": "yfinance",
+    "ticker": "XLK"
+  },
+  {
+    "confidence": 0.95,
+    "event_id": "evt_ac8d97dfb6c404d7df14",
+    "event_time": "2026-06-26T20:00:00+00:00",
+    "event_type": "MacroQuote",
+    "family": "macro",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 63000.0,
+    "parent_event_id": null,
+    "payload": {
+      "close": 16.4,
+      "high": 17.0,
+      "low": 15.5,
+      "open": 16.0,
+      "role": "macro",
+      "volume": 0
+    },
+    "related_symbols": [],
+    "sector": null,
+    "source": "yfinance",
+    "ticker": "^VIX"
+  }
+]

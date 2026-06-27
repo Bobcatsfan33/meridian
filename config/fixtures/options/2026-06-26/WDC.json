@@ -1,0 +1,594 @@
+{
+  "spot": 586.4500122070312,
+  "iv_rank": 0.85,
+  "contracts": [
+    {
+      "strike": 527.81,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 527.81,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 527.81,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 527.81,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 533.67,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 533.67,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 533.67,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 533.67,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 539.53,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 539.53,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 539.53,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 539.53,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 545.4,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 545.4,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 545.4,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 545.4,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 551.26,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 551.26,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 551.26,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 551.26,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 557.13,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 557.13,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 557.13,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 557.13,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 562.99,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 562.99,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 562.99,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 562.99,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 568.86,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 568.86,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 568.86,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 568.86,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 574.72,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 574.72,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 574.72,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 574.72,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 580.59,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 580.59,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 580.59,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 580.59,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 586.45,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.55
+    },
+    {
+      "strike": 586.45,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.55
+    },
+    {
+      "strike": 586.45,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 9000,
+      "iv": 0.48
+    },
+    {
+      "strike": 586.45,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 800,
+      "iv": 0.48
+    },
+    {
+      "strike": 592.31,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 592.31,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 12000,
+      "iv": 0.55
+    },
+    {
+      "strike": 592.31,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 592.31,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 12000,
+      "iv": 0.48
+    },
+    {
+      "strike": 598.18,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 598.18,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 598.18,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 598.18,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 604.04,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 604.04,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 604.04,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 604.04,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 609.91,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 609.91,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 609.91,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 609.91,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 615.77,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 615.77,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 615.77,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 615.77,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 621.64,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 621.64,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 621.64,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 621.64,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 627.5,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 627.5,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 627.5,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 627.5,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 633.37,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 633.37,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 633.37,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 633.37,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 639.23,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 639.23,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 639.23,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 639.23,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    },
+    {
+      "strike": 645.1,
+      "expiry": "2026-07-10",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.55
+    },
+    {
+      "strike": 645.1,
+      "expiry": "2026-07-10",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.55
+    },
+    {
+      "strike": 645.1,
+      "expiry": "2026-08-07",
+      "type": "put",
+      "open_interest": 1500,
+      "iv": 0.48
+    },
+    {
+      "strike": 645.1,
+      "expiry": "2026-08-07",
+      "type": "call",
+      "open_interest": 3000,
+      "iv": 0.48
+    }
+  ]
+}

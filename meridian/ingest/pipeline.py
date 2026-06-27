@@ -1,0 +1,177 @@
+"""Ingest pipeline: run enabled adapters for one trade date -> normalized_events.
+
+Flow: load universe+ETFs -> build IngestContext -> run each adapter (fetch+normalize,
+never fatal on a single feed) -> dedup by event_id -> clock-alignment + no-lookahead
+audit -> upsert raw_market_events + normalized_events. Returns an IngestResult the
+CLI renders (per-family counts, per-adapter coverage, alignment report).
+"""
+from __future__ import annotations
+
+import datetime as dt
+import json
+from dataclasses import dataclass, field
+from typing import Iterable
+
+from ..adapters.base import Adapter, IngestContext, NormalizedEvent, RawEvent
+from ..adapters.registry import build_adapters
+from ..config import Config
+from ..storage import connect
+from .audit import SourceAlignment, alignment_report, lookahead_violations
+from .clock import UTC
+
+
+@dataclass
+class AdapterStats:
+    name: str
+    source: str
+    fetched: int = 0
+    normalized: int = 0
+    error: str | None = None
+
+
+@dataclass
+class IngestResult:
+    trade_date: dt.date
+    universe_size: int
+    total_normalized: int
+    family_counts: dict[str, int] = field(default_factory=dict)
+    adapter_stats: list[AdapterStats] = field(default_factory=list)
+    alignment: list[SourceAlignment] = field(default_factory=list)
+    lookahead_violations: int = 0
+
+
+def load_context(cfg: Config, trade_date: dt.date, now: dt.datetime, selected_block) -> IngestContext:
+    con = connect(cfg.duckdb_path)
+    rows = con.execute(
+        "SELECT symbol, name, sector, index_membership FROM universe ORDER BY symbol"
+    ).fetchall()
+    con.close()
+    universe = tuple(
+        {"symbol": r[0], "name": r[1], "sector": r[2], "index_membership": r[3]} for r in rows
+    )
+    etfs = _load_etfs(cfg)
+    return IngestContext(
+        trade_date=trade_date,
+        now=now,
+        universe=universe,
+        etfs=etfs,
+        settings=selected_block or {},
+    )
+
+
+def _load_etfs(cfg: Config) -> tuple[dict[str, str], ...]:
+    import csv
+
+    path = cfg.index_etf_file
+    if not path.exists():
+        return ()
+    with path.open() as f:
+        return tuple(dict(r) for r in csv.DictReader(f))
+
+
+def run_ingest(
+    cfg: Config,
+    trade_date: dt.date,
+    selected: Iterable[str] | None = None,
+    now: dt.datetime | None = None,
+    write: bool = True,
+) -> IngestResult:
+    now = now or dt.datetime.now(UTC)
+    adapters = build_adapters(cfg.raw.get("adapters", {}), selected)
+
+    base_ctx = load_context(cfg, trade_date, now, None)
+
+    all_raw: list[RawEvent] = []
+    by_id: dict[str, NormalizedEvent] = {}
+    stats: list[AdapterStats] = []
+
+    for adapter in adapters:
+        ctx = _ctx_for(base_ctx, cfg, adapter)
+        st = AdapterStats(name=adapter.name, source=adapter.source)
+        try:
+            raws, events = adapter.run(ctx)
+            st.fetched = len(raws)
+            st.normalized = len(events)
+            all_raw.extend(raws)
+            for e in events:
+                by_id[e.event_id] = e  # last-writer-wins dedup on stable id
+        except Exception as exc:  # an adapter failure must not abort the run
+            st.error = f"{type(exc).__name__}: {exc}"
+        stats.append(st)
+
+    events = list(by_id.values())
+    align = alignment_report(events)
+    violations = lookahead_violations(events)
+
+    if write:
+        _write(cfg, all_raw, events)
+
+    family_counts: dict[str, int] = {}
+    for e in events:
+        family_counts[e.family] = family_counts.get(e.family, 0) + 1
+
+    return IngestResult(
+        trade_date=trade_date,
+        universe_size=len(base_ctx.universe),
+        total_normalized=len(events),
+        family_counts=dict(sorted(family_counts.items())),
+        adapter_stats=stats,
+        alignment=align,
+        lookahead_violations=len(violations),
+    )
+
+
+def _ctx_for(base: IngestContext, cfg: Config, adapter: Adapter) -> IngestContext:
+    from ..adapters.base import replace
+
+    block = (cfg.raw.get("adapters", {}) or {}).get(adapter.name, {}) or {}
+    adapter.settings = block  # adapter reads its own config block
+    return replace(base, settings=block)
+
+
+def _write(cfg: Config, raws: list[RawEvent], events: list[NormalizedEvent]) -> None:
+    con = connect(cfg.duckdb_path)
+    try:
+        if raws:
+            con.executemany(
+                "INSERT OR REPLACE INTO raw_market_events "
+                "(event_id, ingest_time, source, ticker, payload) VALUES (?,?,?,?,?)",
+                [
+                    (
+                        r.raw_id,
+                        r.ingest_time.astimezone(UTC).replace(tzinfo=None),
+                        r.source,
+                        r.ticker,
+                        json.dumps(r.payload, default=str),
+                    )
+                    for r in raws
+                ],
+            )
+        if events:
+            con.executemany(
+                "INSERT OR REPLACE INTO normalized_events "
+                "(event_id, event_time, ingest_time, ticker, event_type, family, source, "
+                " confidence, sector, related_symbols, parent_event_id, payload) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                [_storage_tuple(e) for e in events],
+            )
+    finally:
+        con.close()
+
+
+def _storage_tuple(e: NormalizedEvent):
+    row = e.as_storage_row()
+    return (
+        row["event_id"],
+        row["event_time"],
+        row["ingest_time"],
+        row["ticker"],
+        row["event_type"],
+        row["family"],
+        row["source"],
+        row["confidence"],
+        row["sector"],
+        row["related_symbols"],
+        row["parent_event_id"],
+        json.dumps(row["payload"], default=str),
+    )

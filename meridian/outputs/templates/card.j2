@@ -1,0 +1,22 @@
+{{ ev.ticker }}  {{ ev.move_pct | spct }}   {{ ev.window_start }} → {{ ev.window_end }}
+{{ ev.tier_phrase }}: this {{ ev.tier_verb }} a {{ ev.pattern.id }} ({{ ev.pattern.description }})
+Confidence: {{ ev.confidence.tier }} ({{ ev.confidence.value | pct }})   Completeness: {{ ev.pattern.completeness | pct }}   Mechanism: {{ ev.move_class }}
+Readout: {{ ev.readout }}
+Forward odds: (predictive engine — see `meridian backtest --pattern {{ ev.pattern.id }}`)
+Regime: {{ ev.regime_tags | join(', ') if ev.regime_tags else '—' }}
+
+Evidence (partial order, not arrival order):
+{% for t in ev.timeline %}
+  {{ t.time }}  {{ t.label }}  [abn {{ t.abnormality | pct }}]
+{% endfor %}
+
+Driver attribution (sums with residual to 100%):
+{% for d in ev.drivers %}
+  - {{ d.driver }}: {{ d.weight | pct }}  (abn={{ d.inputs.signal_abnormality | pct }}, corrob={{ d.inputs.corroboration_count }}, lead-lag={{ d.inputs.lead_lag_strength | pct }}, hit-rate={{ d.inputs.historical_hit_rate | pct }})
+{% endfor %}
+Unexplained residual: {{ ev.unexplained_residual | pct }}
+{% if ev.constraints_applied %}
+Constraints: {{ ev.constraints_applied | join('; ') }}
+{% endif %}
+Invalidation: {{ ev.invalidation }}
+Not investment advice.

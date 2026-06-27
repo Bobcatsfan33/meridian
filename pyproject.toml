@@ -1,0 +1,34 @@
+[project]
+name = "meridian"
+version = "0.0.0"
+description = "Local market event-correlation + prediction engine"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.0",
+    "polars>=1.0",
+    "typer>=0.12",
+    "rich>=13.0",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "jinja2>=3.0",
+]
+
+[project.optional-dependencies]
+data = ["yfinance", "fredapi", "feedparser", "pandas", "lxml"]
+ml = ["scikit-learn", "statsmodels", "scipy"]
+api = ["fastapi", "uvicorn", "apscheduler"]
+dev = ["pytest", "ruff"]
+
+[project.scripts]
+meridian = "meridian.cli:app"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["meridian*"]
+
+[tool.ruff]
+line-length = 100

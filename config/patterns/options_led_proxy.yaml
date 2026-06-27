@@ -1,0 +1,13 @@
+# Options-led momentum, PRICE-ONLY proxy (no options layer until Phase 5).
+# Flow-like signature: an abnormal price/volume expansion with no news/filing
+# catalyst. rel_volume_pctile is an L1 feature used as a graded weight, not a cutoff.
+id: options_led_proxy
+version: "1"
+description: Abnormal price + relative-volume expansion with no news or filing catalyst.
+roles:
+  P: {family: price_volume}
+legs:
+  - {type: present, role: P}
+  - {type: feature, role: P, feature: rel_volume_pctile}
+  - {type: absent, family: news}
+  - {type: absent, family: filing}

@@ -1,0 +1,50 @@
+[
+  {
+    "confidence": 0.8,
+    "event_id": "evt_624e73ac97ca23afc2a4",
+    "event_time": "2026-06-26T14:05:00+00:00",
+    "event_type": "HeadlineHit",
+    "family": "news",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 84300.0,
+    "parent_event_id": null,
+    "payload": {
+      "feed": "wsj",
+      "headline": "NVDA and Apple rally as AMD chips gain share",
+      "matched_symbols": [
+        "NVDA",
+        "AMD",
+        "AAPL"
+      ],
+      "url": "https://example.com/a"
+    },
+    "related_symbols": [
+      "NVDA",
+      "AMD",
+      "AAPL"
+    ],
+    "sector": "Information Technology",
+    "source": "news_rss",
+    "ticker": "NVDA"
+  },
+  {
+    "confidence": 0.8,
+    "event_id": "evt_65cfe34e5fbf286498b6",
+    "event_time": "2026-06-26T18:30:00+00:00",
+    "event_type": "HeadlineHit",
+    "family": "news",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 68400.0,
+    "parent_event_id": null,
+    "payload": {
+      "feed": "cnbc",
+      "headline": "Fed holds rates steady amid soft inflation",
+      "matched_symbols": [],
+      "url": "https://example.com/b"
+    },
+    "related_symbols": [],
+    "sector": null,
+    "source": "news_rss",
+    "ticker": null
+  }
+]

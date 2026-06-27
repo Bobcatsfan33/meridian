@@ -1,0 +1,38 @@
+{
+  "e_8k": {
+    "abnormality": 0.7,
+    "event_type": "Filing8K",
+    "method": "family_prior_no_history",
+    "ticker": "AAPL"
+  },
+  "e_aapl": {
+    "abnormality": 1.0,
+    "event_type": "DailyBar",
+    "method": "own_regime_percentile",
+    "ticker": "AAPL"
+  },
+  "e_amd": {
+    "abnormality": 0.0,
+    "event_type": "DailyBar",
+    "method": "own_regime_percentile",
+    "ticker": "AMD"
+  },
+  "e_news": {
+    "abnormality": 0.6,
+    "event_type": "HeadlineHit",
+    "method": "family_prior_no_history",
+    "ticker": "AAPL"
+  },
+  "e_vix": {
+    "abnormality": 1.0,
+    "event_type": "MacroQuote",
+    "method": "own_regime_percentile",
+    "ticker": "^VIX"
+  },
+  "e_xlk": {
+    "abnormality": 0.0,
+    "event_type": "ETFBar",
+    "method": "own_regime_percentile",
+    "ticker": "XLK"
+  }
+}

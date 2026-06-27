@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Meridian — local market event engine</title>
+<style>
+  :root { --bg:#0e1116; --panel:#171c24; --line:#2a313c; --fg:#d7dde6; --dim:#8b95a3;
+          --hi:#4cc38a; --med:#d8a657; --low:#7daea3; --red:#e06c75; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; }
+  h1 { font-size:16px; margin:0; letter-spacing:1px; }
+  .dim { color:var(--dim); }
+  select, button { background:var(--panel); color:var(--fg); border:1px solid var(--line);
+                   border-radius:6px; padding:5px 9px; font:inherit; }
+  main { display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; padding:16px; }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .panel h2 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--dim);
+              margin:0; padding:10px 14px; border-bottom:1px solid var(--line); }
+  table { width:100%; border-collapse:collapse; }
+  th,td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { color:var(--dim); font-weight:600; }
+  tr:hover td { background:#1d242e; cursor:pointer; }
+  .High{color:var(--hi)} .Medium{color:var(--med)} .Low{color:var(--low)} .Unknown{color:var(--dim)}
+  .up{color:var(--hi)} .down{color:var(--red)}
+  pre { margin:0; padding:14px; white-space:pre-wrap; word-break:break-word; max-height:46vh; overflow:auto; }
+  .full { grid-column:1 / -1; }
+  .note { padding:8px 14px; color:var(--dim); font-size:12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>◵ MERIDIAN</h1>
+  <span class="dim">local market event-correlation engine</span>
+  <span style="flex:1"></span>
+  <label class="dim">date <select id="date"></select></label>
+  <button id="refresh">refresh</button>
+  <span class="dim">not investment advice</span>
+</header>
+<main>
+  <section class="panel">
+    <h2>Pattern scanner — ranked by confidence</h2>
+    <div id="scannerWrap"><div class="note">loading…</div></div>
+  </section>
+  <section class="panel">
+    <h2>Card — <span id="cardTicker" class="dim">select a row</span></h2>
+    <pre id="card" class="dim">Click a scanner row to render its deterministic card.</pre>
+  </section>
+  <section class="panel full">
+    <h2>EOD postmortem</h2>
+    <pre id="postmortem" class="dim">loading…</pre>
+  </section>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+let DATE = null;
+
+async function j(u){ const r = await fetch(u); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+async function t(u){ const r = await fetch(u); if(!r.ok) return "(" + r.status + ") " + (await r.text()); return r.text(); }
+const pct = x => (x==null||isNaN(x)) ? "—" : (x*100).toFixed(1)+"%";
+const spct = x => (x==null||isNaN(x)) ? "—" : (x>=0?"+":"")+(x*100).toFixed(1)+"%";
+
+async function loadDates(){
+  const dates = await j("/api/dates");
+  const sel = $("#date"); sel.innerHTML = "";
+  dates.forEach(d => { const o=document.createElement("option"); o.value=o.textContent=d; sel.appendChild(o); });
+  if(dates.length){ DATE = dates[0]; sel.value = DATE; }
+  return dates.length>0;
+}
+
+async function loadScanner(){
+  const rows = await j("/api/scanner?date="+DATE);
+  let h = "<table><thead><tr><th>ticker</th><th>move</th><th>pattern</th><th>conf</th><th>resid</th><th>mechanism</th></tr></thead><tbody>";
+  for(const r of rows){
+    h += `<tr data-t="${r.ticker}">
+      <td>${r.ticker}</td>
+      <td class="${(r.move_pct||0)>=0?'up':'down'}">${spct(r.move_pct)}</td>
+      <td>${r.pattern}</td>
+      <td class="${r.tier}">${r.tier} ${pct(r.confidence)}</td>
+      <td>${pct(r.residual)}</td>
+      <td class="dim">${r.move_class||"—"}</td></tr>`;
+  }
+  h += "</tbody></table>";
+  $("#scannerWrap").innerHTML = rows.length ? h : '<div class="note">No explanations. Run: meridian postmortem --date '+DATE+'</div>';
+  document.querySelectorAll("#scannerWrap tr[data-t]").forEach(tr =>
+    tr.onclick = () => loadCard(tr.getAttribute("data-t")));
+}
+
+async function loadCard(ticker){
+  $("#cardTicker").textContent = ticker; $("#cardTicker").className = "";
+  $("#card").className = ""; $("#card").textContent = "loading…";
+  $("#card").textContent = await t(`/api/card/${ticker}?date=${DATE}`);
+}
+async function loadPostmortem(){ $("#postmortem").textContent = await t(`/api/postmortem/${DATE}`); $("#postmortem").className=""; }
+
+async function refresh(){ await loadScanner(); await loadPostmortem(); }
+$("#date").onchange = e => { DATE = e.target.value; refresh(); };
+$("#refresh").onclick = refresh;
+
+(async () => {
+  try {
+    if(await loadDates()) refresh();
+    else { $("#scannerWrap").innerHTML = '<div class="note">No data yet. Run the pipeline, then meridian postmortem.</div>'; $("#postmortem").textContent=""; }
+  } catch(e){ $("#scannerWrap").innerHTML = '<div class="note">'+e.message+'</div>'; }
+})();
+</script>
+</body>
+</html>

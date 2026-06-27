@@ -1,0 +1,14 @@
+# Sector-sympathy: the target moves with its sector basket, no company catalyst.
+# NO thresholds here (hard rule): abnormality enters only as a graded weight in
+# completeness. Leg presence/relation is structural; magnitude lives in L1.
+id: sector_sympathy
+version: "1"
+description: Target's abnormal move is concurrent with its sector ETF, no company news.
+roles:
+  P: {family: price_volume}                 # the target's daily move
+  S: {family: sector_peer, bind: sector_etf} # the target's sector ETF move
+legs:
+  - {type: present, role: P}
+  - {type: present, role: S}
+  - {type: concurrent, a: P, b: S}
+  - {type: absent, family: news}

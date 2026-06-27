@@ -1,0 +1,40 @@
+[
+  {
+    "confidence": 0.9,
+    "event_id": "evt_e4e7a3097ee5448cf14e",
+    "event_time": "2026-06-26T20:05:00+00:00",
+    "event_type": "EarningsResult",
+    "family": "earnings",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 62700.0,
+    "parent_event_id": null,
+    "payload": {
+      "eps_estimate": 1.89,
+      "reported_eps": 2.01,
+      "surprise_pct": 6.3
+    },
+    "related_symbols": [],
+    "sector": "Information Technology",
+    "source": "earnings_yf",
+    "ticker": "AAPL"
+  },
+  {
+    "confidence": 0.9,
+    "event_id": "evt_9be6e8f30e7beb8c164f",
+    "event_time": "2026-06-26T20:00:00+00:00",
+    "event_type": "EarningsAnnouncement",
+    "family": "earnings",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 63000.0,
+    "parent_event_id": null,
+    "payload": {
+      "eps_estimate": 0.95,
+      "reported_eps": null,
+      "surprise_pct": null
+    },
+    "related_symbols": [],
+    "sector": "Information Technology",
+    "source": "earnings_yf",
+    "ticker": "NVDA"
+  }
+]

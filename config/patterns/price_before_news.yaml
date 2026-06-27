@@ -1,0 +1,14 @@
+# Price-before-news: the price move precedes the first headline (headline is late
+# confirmation, possibly leaked/private info). Needs intraday price events to fire
+# meaningfully; in EOD mode the daily bar is stamped at the close, so this rarely
+# fires until the intraday loop (Phase 7). Defined now so the machinery is exercised.
+id: price_before_news
+version: "1"
+description: Abnormal price move precedes the first news headline for the name.
+roles:
+  P: {family: price_volume}
+  N: {family: news, pick: first}
+legs:
+  - {type: present, role: P}
+  - {type: present, role: N}
+  - {type: precedes, a: P, b: N}
