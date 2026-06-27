@@ -124,6 +124,8 @@ def build_evidence(
     window_start: Any,
     window_end: Any,
     catalysts: list[MatchEvent] | None = None,
+    explained_fraction: float | None = None,
+    residual_basis: str = "structural",
 ) -> dict[str, Any]:
     catalysts = catalysts or []
     move_class = classify(bindings, catalysts)
@@ -132,6 +134,7 @@ def build_evidence(
     sr = score(
         completeness=completeness, drivers=drivers_in, corroboration_count=corroboration,
         lead_lag_strength=lead_lag_strength, cfg_scoring=cfg_scoring,
+        explained_fraction=explained_fraction, residual_basis=residual_basis,
     )
     sector_abn = bindings["S"].abnormality if bindings.get("S") else None
     target_abn = bindings["P"].abnormality if bindings.get("P") else 0.0
@@ -158,6 +161,7 @@ def build_evidence(
         "readout": phrases.readout(pattern_id),
         "drivers": drivers,
         "unexplained_residual": sr.residual,
+        "residual_basis": sr.residual_basis,
         "constraints_applied": co.notes,
         "regime_tags": list(regime_tags),
         "move_class": move_class.label,

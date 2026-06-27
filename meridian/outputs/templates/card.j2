@@ -10,11 +10,11 @@ Evidence (partial order, not arrival order):
   {{ t.time }}  {{ t.label }}  [abn {{ t.abnormality | pct }}]
 {% endfor %}
 
-Driver attribution (sums with residual to 100%):
+Driver attribution ({{ ev.residual_basis }} basis — sums with residual to 100%):
 {% for d in ev.drivers %}
   - {{ d.driver }}: {{ d.weight | pct }}  (abn={{ d.inputs.signal_abnormality | pct }}, corrob={{ d.inputs.corroboration_count }}, lead-lag={{ d.inputs.lead_lag_strength | pct }}, hit-rate={{ d.inputs.historical_hit_rate | pct }})
 {% endfor %}
-Unexplained residual: {{ ev.unexplained_residual | pct }}
+Unexplained residual: {{ ev.unexplained_residual | pct }} ({{ ev.residual_basis }}-attributed{% if ev.residual_basis == 'structural' %}; no return model for this pattern{% endif %})
 {% if ev.constraints_applied %}
 Constraints: {{ ev.constraints_applied | join('; ') }}
 {% endif %}

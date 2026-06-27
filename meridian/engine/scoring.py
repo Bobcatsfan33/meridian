@@ -31,6 +31,7 @@ class ScoreResult:
     tier: str
     explained: float
     residual: float
+    residual_basis: str = "structural"   # "return" (share of the move) | "structural" (legs)
     drivers: list[Driver] = field(default_factory=list)
 
 
@@ -41,7 +42,17 @@ def score(
     corroboration_count: int,
     lead_lag_strength: float,
     cfg_scoring: dict,
+    explained_fraction: float | None = None,
+    residual_basis: str = "structural",
 ) -> ScoreResult:
+    """L3 confidence + attribution.
+
+    The residual is the UNEXPLAINED SHARE OF THE MOVE when a return decomposition is
+    available (`explained_fraction` from outputs/build.py, residual_basis="return");
+    otherwise it falls back to the structural completeness residual. Either way the
+    explained fraction is capped so the residual is never rounded below `min_residual`
+    and sum(weights) + residual == 1.0.
+    """
     w = cfg_scoring.get("weights", {})
     hit_rate = float(cfg_scoring.get("neutral_hit_rate", 0.5))
     min_resid = float(cfg_scoring.get("min_residual", 0.05))
@@ -58,7 +69,11 @@ def score(
     wsum = sum(float(w.get(k, 0.0)) for k in features) or 1.0
     confidence = sum(float(w.get(k, 0.0)) * v for k, v in features.items()) / wsum
 
-    explained = min(completeness, 1.0 - min_resid)
+    if explained_fraction is not None:
+        explained = max(0.0, min(explained_fraction, 1.0 - min_resid))
+    else:
+        explained = min(completeness, 1.0 - min_resid)
+        residual_basis = "structural"
     total_contrib = sum(max(0.0, d.contribution) for d in drivers)
     out_drivers: list[Driver] = []
     if total_contrib > 0:
@@ -78,7 +93,7 @@ def score(
     tier = _tier(confidence, cfg_scoring)
     return ScoreResult(confidence=round(confidence, 6), tier=tier,
                        explained=round(sum(d.weight for d in out_drivers), 6),
-                       residual=residual, drivers=out_drivers)
+                       residual=residual, residual_basis=residual_basis, drivers=out_drivers)
 
 
 def _tier(confidence: float, s: dict) -> str:

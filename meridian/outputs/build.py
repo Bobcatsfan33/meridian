@@ -14,6 +14,8 @@ from ..config import Config
 from ..engine import match as M
 from ..engine.patterns import load_patterns
 from ..engine.structural import MatchEvent
+from ..ingest.clock import market_close_utc
+from ..state import baseline as bl
 from ..storage import connect
 from .explain import build_evidence
 
@@ -49,6 +51,9 @@ def build_explanations(cfg: Config, target_date: dt.date,
             feeds_ok = not insufficient and p_ev is not None
             etf = sector_etf.get(sector_of.get(fr["ticker"]))
             lead_lag = _lead_lag_strength(con, fr["ticker"], target_date)
+            explained_fraction, residual_basis = _return_residual(
+                con, fr["pattern_id"], fr["ticker"], etf, target_date,
+                abn_map.get(fr["ticker"]), cfg)
 
             ev = build_evidence(
                 ticker=fr["ticker"], pattern_id=pat.id, pattern_ver=pat.version,
@@ -57,8 +62,9 @@ def build_explanations(cfg: Config, target_date: dt.date,
                 regime_tags=fr["regime_tags"], sector_etf=etf, lead_lag_strength=lead_lag,
                 insufficient_history=insufficient, feeds_ok=feeds_ok, cfg_scoring=scoring_cfg,
                 window_start=fr["window_start"], window_end=fr["window_end"], catalysts=catalysts,
+                explained_fraction=explained_fraction, residual_basis=residual_basis,
             )
-            _assert_residual(ev)
+            _assert_residual(ev, float(scoring_cfg.get("min_residual", 0.05)))
             evidences.append(ev)
             rows.append(_to_row(fr, ev))
 
@@ -68,12 +74,64 @@ def build_explanations(cfg: Config, target_date: dt.date,
         con.close()
 
 
-def _assert_residual(ev: dict) -> None:
+def _assert_residual(ev: dict, min_resid: float) -> None:
     total = sum(d["weight"] for d in ev["drivers"]) + ev["unexplained_residual"]
     if abs(total - 1.0) > _RESIDUAL_TOL:
         raise ValueError(f"attribution+residual != 1.0 for {ev['ticker']}: {total}")
-    if ev["unexplained_residual"] <= 0:
-        raise ValueError(f"residual must be > 0 (never rounded to 100%): {ev['ticker']}")
+    if ev["unexplained_residual"] < min_resid - _RESIDUAL_TOL:
+        raise ValueError(f"residual below floor {min_resid} for {ev['ticker']}: "
+                         f"{ev['unexplained_residual']}")
+    if ev.get("residual_basis") not in ("return", "structural"):
+        raise ValueError(f"missing/invalid residual_basis for {ev['ticker']}: {ev.get('residual_basis')}")
+
+
+def _return_residual(con, pattern_id, ticker, etf, target_date, abnormal_move, cfg):
+    """Return-based unexplained share of the abnormal move (ROADMAP §11).
+
+    sector_sympathy: decompose the name's abnormal move into the part its sector
+    explains. attributed = beta_to_sector * sector_move; residual_return = abnormal_move
+    - attributed; residual_fraction = clip(|residual_return| / |abnormal_move|, floor, 1).
+    Returns (explained_fraction, "return") or (None, "structural") when no return basis
+    is defensible (other patterns, or missing inputs) — the caller then uses the
+    structural completeness residual.
+    """
+    min_resid = float(cfg.engine.get("scoring", {}).get("min_residual", 0.05))
+    if pattern_id != "sector_sympathy" or not etf or abnormal_move is None or abnormal_move == 0:
+        return None, "structural"
+    close_ts = market_close_utc(target_date).replace(tzinfo=None)
+    sector_move = _ret_on(con, etf, close_ts)
+    if sector_move is None:
+        return None, "structural"
+    win = int(cfg.feat("beta_window_days", 60))
+    beta = _beta_to_sector(con, ticker, etf, close_ts, win)
+    if beta is None:
+        return None, "structural"
+    attributed = beta * sector_move
+    residual_return = abnormal_move - attributed
+    residual_fraction = min(1.0, max(min_resid, abs(residual_return) / abs(abnormal_move)))
+    return 1.0 - residual_fraction, "return"
+
+
+def _ret_on(con, ticker, close_ts):
+    row = con.execute("SELECT ret_1m FROM ticker_state_1m WHERE ticker=? AND ts=?",
+                      [ticker, close_ts]).fetchone()
+    return row[0] if row and row[0] is not None else None
+
+
+def _beta_to_sector(con, ticker, etf, close_ts, win):
+    """OLS beta of the name's returns on its sector ETF's returns, strictly BEFORE the
+    target close (no-lookahead). None if too little paired history."""
+    stock = dict(con.execute(
+        "SELECT ts, ret_1m FROM ticker_state_1m WHERE ticker=? AND ts<? AND ret_1m IS NOT NULL "
+        "ORDER BY ts DESC LIMIT ?", [ticker, close_ts, win]).fetchall())
+    sect = dict(con.execute(
+        "SELECT ts, ret_1m FROM ticker_state_1m WHERE ticker=? AND ts<? AND ret_1m IS NOT NULL "
+        "ORDER BY ts DESC LIMIT ?", [etf, close_ts, win]).fetchall())
+    common = sorted(set(stock) & set(sect))
+    if len(common) < 2:
+        return None
+    beta, _alpha = bl.beta_alpha([stock[t] for t in common], [sect[t] for t in common])
+    return None if beta != beta else beta  # nan -> None
 
 
 def _load_events(con, target_date) -> list[MatchEvent]:
