@@ -18,6 +18,21 @@ from typing import Any, Iterable
 
 from ..ingest.clock import naive_utc, to_utc
 
+# Feed source -> clean provenance vocabulary (auditable data_source on every row).
+_SOURCE_TO_DATA_SOURCE = {
+    "yfinance": "yfinance",
+    "fred": "fred",
+    "sec_edgar": "edgar",
+    "yahoo_rss": "news_rss",
+    "finra": "finra",
+    "massive": "massive",
+    "earnings_yf": "yfinance",
+    "options_yfinance": "yfinance",
+    "options_massive": "massive",
+    "options_fixture": "fixture",
+    "options_live": "yfinance",
+}
+
 # Canonical event families (ROADMAP §7). `earnings` extends the §7 list because
 # earnings is a first-class driver in §6 with no home among the original nine.
 FAMILIES = frozenset(
@@ -105,6 +120,15 @@ class NormalizedEvent:
         """ingest_time - event_time. Negative => received before it happened (lookahead)."""
         return (to_utc(self.ingest_time) - to_utc(self.event_time)).total_seconds()
 
+    @property
+    def data_source(self) -> str:
+        """Provenance in a clean vocabulary (auditable on every row). Payload data_source
+        (bars/options) wins; otherwise mapped from the feed source."""
+        ds = (self.payload or {}).get("data_source")
+        if ds:
+            return ds
+        return _SOURCE_TO_DATA_SOURCE.get(self.source, self.source)
+
     def as_storage_row(self) -> dict[str, Any]:
         """Flatten to the normalized_events column shape (timestamps -> naive UTC)."""
         return {
@@ -119,6 +143,7 @@ class NormalizedEvent:
             "sector": self.sector,
             "related_symbols": list(self.related_symbols),
             "parent_event_id": self.parent_event_id,
+            "data_source": self.data_source,
             "payload": self.payload,
         }
 

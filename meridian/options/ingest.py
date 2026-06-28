@@ -61,7 +61,7 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
                 payload = json.dumps(spec_payload, default=str)
                 norm_rows.append((eid, close_ts, now.astimezone(UTC).replace(tzinfo=None), ticker,
                                   spec["event_type"], "dealer_pos", src_label,
-                                  RELIABILITY, None, [], None, payload))
+                                  RELIABILITY, None, [], None, snap.data_source, payload))
                 raw_rows.append((f"raw_{eid}", now.astimezone(UTC).replace(tzinfo=None),
                                  src_label, ticker, payload))
                 summary.event_type_counts[spec["event_type"]] = \
@@ -103,8 +103,8 @@ def _write(con, norm_rows, raw_rows, surf_rows, state_rows) -> None:
     if norm_rows:
         con.executemany(
             "INSERT OR REPLACE INTO normalized_events (event_id,event_time,ingest_time,ticker,"
-            "event_type,family,source,confidence,sector,related_symbols,parent_event_id,payload) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", norm_rows)
+            "event_type,family,source,confidence,sector,related_symbols,parent_event_id,"
+            "data_source,payload) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", norm_rows)
         con.executemany(
             "INSERT OR REPLACE INTO raw_market_events (event_id,ingest_time,source,ticker,payload) "
             "VALUES (?,?,?,?,?)", raw_rows)

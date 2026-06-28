@@ -173,8 +173,8 @@ def _write(cfg: Config, raws: list[RawEvent], events: list[NormalizedEvent]) -> 
             con.executemany(
                 "INSERT OR REPLACE INTO normalized_events "
                 "(event_id, event_time, ingest_time, ticker, event_type, family, source, "
-                " confidence, sector, related_symbols, parent_event_id, payload) "
-                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                " confidence, sector, related_symbols, parent_event_id, data_source, payload) "
+                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 [_storage_tuple(e) for e in events],
             )
             _mirror_side_tables(con, events)
@@ -187,10 +187,10 @@ def _mirror_side_tables(con, events: list[NormalizedEvent]) -> None:
     news = [e for e in events if e.family == "news"]
     if news:
         con.executemany(
-            "INSERT OR REPLACE INTO news_events (event_id, event_time, ticker, headline, source, "
-            "sentiment, topic) VALUES (?,?,?,?,?,?,?)",
-            [(e.event_id, e.as_storage_row()["event_time"], e.ticker,
-              (e.payload or {}).get("headline"), e.source, None, None) for e in news],
+            "INSERT OR REPLACE INTO news_events (event_id, event_time, ingest_time, ticker, "
+            "headline, source, sentiment, topic) VALUES (?,?,?,?,?,?,?,?)",
+            [(e.event_id, e.as_storage_row()["event_time"], e.as_storage_row()["ingest_time"],
+              e.ticker, (e.payload or {}).get("headline"), e.source, None, None) for e in news],
         )
     filings = [e for e in events if e.family == "filing"]
     if filings:
@@ -231,5 +231,6 @@ def _storage_tuple(e: NormalizedEvent):
         row["sector"],
         row["related_symbols"],
         row["parent_event_id"],
+        row["data_source"],
         json.dumps(row["payload"], default=str),
     )
