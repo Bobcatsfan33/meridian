@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS normalized_events (
     sector          VARCHAR,
     related_symbols VARCHAR[],
     parent_event_id VARCHAR,              -- reserved: membership in complex event
+    data_source     VARCHAR,              -- provenance: massive|yfinance|finra|edgar|fred|news_rss|fixture
     payload         JSON
 );
 
@@ -106,7 +107,7 @@ CREATE TABLE IF NOT EXISTS regimes_daily (
 
 -- ---------- typed source event side-tables ----------
 CREATE TABLE IF NOT EXISTS news_events (
-    event_id VARCHAR PRIMARY KEY, event_time TIMESTAMP, ticker VARCHAR,
+    event_id VARCHAR PRIMARY KEY, event_time TIMESTAMP, ingest_time TIMESTAMP, ticker VARCHAR,
     headline VARCHAR, source VARCHAR, sentiment DOUBLE, topic VARCHAR
 );
 CREATE TABLE IF NOT EXISTS filing_events (

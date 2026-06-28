@@ -70,7 +70,10 @@ def build_explanations(cfg: Config, target_date: dt.date,
             evidences.append(ev)
             rows.append(_to_row(fr, ev))
 
-        _persist(con, target_date, rows)
+        # Only persist the FULL set. A pattern-filtered build (e.g. `card --pattern X`) is a
+        # render path and must not clobber the day's stored move_explanations.
+        if pattern_id is None:
+            _persist(con, target_date, rows)
         return evidences
     finally:
         con.close()
@@ -115,13 +118,17 @@ def _return_residual(con, pattern_id, ticker, etf, target_date, abnormal_move, c
 
 
 def _options_data_source(bindings: dict) -> str:
-    """If any bound dealer-positioning event came from a synthetic chain, the read is
-    proxy data. Defaults to 'live' when no options legs are involved."""
+    """Provenance of the options legs: the actual provider (massive|yfinance|fixture).
+    Fixture (synthetic) is proxy data; anything else is live/full-tier. 'live' when no
+    options legs are involved (non-options pattern)."""
+    provider = None
     for ev in bindings.values():
         if ev is not None and ev.family == "dealer_pos":
-            if (ev.payload or {}).get("data_source") == "fixture":
-                return "fixture"
-    return "live"
+            ds = (ev.payload or {}).get("data_source")
+            if ds == "fixture":
+                return "fixture"        # any synthetic leg -> proxy
+            provider = provider or ds
+    return provider or "live"
 
 
 def _ret_on(con, ticker, close_ts):

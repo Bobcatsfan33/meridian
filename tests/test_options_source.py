@@ -92,6 +92,6 @@ def test_live_yfinance_chain_smoke():
     snap = load_chain(cfg, TARGET, "AAPL")
     if snap is None or not snap.contracts:
         pytest.skip("yfinance options unavailable (offline / rate-limited)")
-    assert snap.data_source == "live"
+    assert snap.data_source == "yfinance"
     assert snap.spot > 0 and len(snap.contracts) > 0
     assert all(isinstance(c, ChainContract) for c in snap.contracts)

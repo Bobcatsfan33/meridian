@@ -162,7 +162,7 @@ def _from_yfinance(cfg, target_date: dt.date, ticker: str, max_expiries: int = 3
         if not contracts:
             return None
         return ChainSnapshot(ticker=ticker, spot=float(spot), iv_rank=None,
-                             contracts=contracts, data_source="live")
+                             contracts=contracts, data_source="yfinance")
     except Exception:
         return None
 
