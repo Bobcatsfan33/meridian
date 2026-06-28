@@ -40,6 +40,11 @@ adapters:
     priority: 1
     max_symbols: 60               # per-ticker scan cap; bulk path is Robinhood MCP
     workers: 8
+  finra:                          # equity flow: short-volume + dark-pool (FREE, no key/limit)
+    enabled: true                 # safe baseline — keyless, never rate-limited
+    priority: 1
+    ats_max_symbols: 40           # per-symbol ATS (dark-pool) scan cap
+    # ats_watchlist: [AAPL, MSFT, NVDA]   # restrict ATS scan (optional)
   # Options source (Phase 5/Issue 3). Real-first. `fixture` is for tests / explicit dev
   # only — fixture-sourced gamma reads are PROXY-banner-flagged and tier-capped.
   options_source: yfinance        # yfinance (default, real) | robinhood | fixture

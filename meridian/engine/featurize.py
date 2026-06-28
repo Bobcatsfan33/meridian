@@ -17,6 +17,7 @@ from ..ingest.clock import market_close_utc
 
 CONTINUOUS_FAMILIES = {"price_volume", "sector_peer", "macro"}
 OPTIONS_FAMILIES = {"dealer_pos", "options_flow"}
+EQUITY_FLOW_FAMILY = "equity_flow"
 DISCRETE_FAMILIES = {"filing", "news", "earnings", "liquidity", "attention"}
 
 
@@ -56,6 +57,8 @@ def featurize(con, cfg: Config, target_date: dt.date) -> FeaturizeSummary:
             res = grade.grade_continuous(con, ev["ticker"], close_ts, win, min_hist, insuff)
         elif fam in OPTIONS_FAMILIES:
             res = grade.grade_options(ev, opt_cfg)
+        elif fam == EQUITY_FLOW_FAMILY and ev["ticker"]:
+            res = grade.grade_equity_flow(con, ev, ev["event_time"], win, min_hist, insuff)
         else:
             res = grade.grade_discrete(con, ev, target_date, win, priors)
         if res.insufficient:

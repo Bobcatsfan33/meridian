@@ -12,6 +12,7 @@ from typing import Iterable
 from .base import Adapter
 from .edgar import EdgarAdapter
 from .earnings import EarningsAdapter
+from .finra import FinraAdapter
 from .fred import FredAdapter
 from .news import NewsRssAdapter
 from .yfinance import YFinanceAdapter
@@ -22,6 +23,7 @@ ADAPTER_CLASSES: dict[str, type[Adapter]] = {
     EdgarAdapter.name: EdgarAdapter,
     NewsRssAdapter.name: NewsRssAdapter,
     EarningsAdapter.name: EarningsAdapter,
+    FinraAdapter.name: FinraAdapter,
 }
 
 

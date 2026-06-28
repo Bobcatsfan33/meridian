@@ -181,6 +181,20 @@ def _mirror_side_tables(con, events: list[NormalizedEvent]) -> None:
               (e.payload or {}).get("form_type"), (e.payload or {}).get("accession"),
               (e.payload or {}).get("url")) for e in filings],
         )
+    flow = [e for e in events if e.family == "equity_flow"]
+    if flow:
+        # mirror into equity_flow_state — the L1 baseline source (idempotent on ticker+ts)
+        for e in flow:
+            row = e.as_storage_row()
+            p = e.payload or {}
+            con.execute(
+                "DELETE FROM equity_flow_state WHERE ticker=? AND ts=? AND "
+                "((? IS NOT NULL AND short_pct IS NOT NULL) OR (? IS NOT NULL AND off_exchange_share IS NOT NULL))",
+                [e.ticker, row["event_time"], p.get("short_pct"), p.get("off_exchange_share")])
+            con.execute(
+                "INSERT INTO equity_flow_state (ticker, ts, short_pct, off_exchange_share, data_source) "
+                "VALUES (?,?,?,?,?)",
+                [e.ticker, row["event_time"], p.get("short_pct"), p.get("off_exchange_share"), e.source])
 
 
 def _storage_tuple(e: NormalizedEvent):
