@@ -57,6 +57,10 @@ def run_causal_tests(cfg: Config, target_date: dt.date, max_lag: int = 3) -> Cau
 
 
 def _ret_series(con, ticker, close_ts, win) -> list[float]:
+    # lookahead-ok: this is NOT a feature predicting the same day — it is the realized
+    # return series through the run date's close, used after close to test a HISTORICAL
+    # lead-lag relationship for that day's edges. Including the close (ts<=) is the
+    # correct point-in-time series available when the causal test runs (EOD).
     rows = con.execute(
         "SELECT ret_1m FROM ticker_state_1m WHERE ticker=? AND ts<=? AND ret_1m IS NOT NULL "
         "ORDER BY ts DESC LIMIT ?", [ticker, close_ts, win]).fetchall()
