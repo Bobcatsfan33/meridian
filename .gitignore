@@ -7,3 +7,7 @@ data/*.log
 .env
 .pytest_cache/
 *.egg-info/
+
+# DB backups (regenerable, never commit)
+data/backups/
+data/**/*.duckdb

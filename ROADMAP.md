@@ -2,7 +2,7 @@
 
 **A Claude Code build specification**
 Working repo name: `meridian` (rename freely)
-Prepared for: Ryan Wallace · June 27, 2026
+Prepared for: HCA Strategy LLC · June 27, 2026
 
 ---
 
