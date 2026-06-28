@@ -37,12 +37,15 @@ adapters:
     priority: 1
     max_symbols: 60               # per-ticker scan cap; bulk path is Robinhood MCP
     workers: 8
-  options:                        # dealer-positioning snapshots (Phase 5)
+  # Options source (Phase 5/Issue 3). Real-first. `fixture` is for tests / explicit dev
+  # only — fixture-sourced gamma reads are PROXY-banner-flagged and tier-capped.
+  options_source: yfinance        # yfinance (default, real) | robinhood | fixture
+  options:                        # dealer-positioning snapshots
     enabled: false
     priority: 2
-    source: fixture               # fixture | robinhood
-    fixtures_dir: config/fixtures/options   # <dir>/<YYYY-MM-DD>/<TICKER>.json
+    fixtures_dir: config/fixtures/options   # <dir>/<YYYY-MM-DD>/<TICKER>.json (tests/dev)
     risk_free_rate: 0.0
+    # tickers: [AAPL, MSFT, NVDA, JPM]      # liquid names to scan on a live run (optional)
   robinhood:   {enabled: false, priority: 2}   # MCP-backed; quotes/options/fundamentals
   thetadata:   {enabled: false, priority: 3}   # PAID, optional (Phase 6 gamma fidelity only)
 

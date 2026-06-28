@@ -8,7 +8,6 @@ from fastapi.testclient import TestClient
 
 from meridian.api import create_app
 from meridian.config import Config
-from meridian.engine.scoring import DriverInput
 from meridian.ingest.clock import market_close_utc
 from meridian.outputs.explain import build_evidence
 from meridian.engine.structural import MatchEvent

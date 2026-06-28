@@ -32,3 +32,6 @@ include = ["meridian*"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.pytest.ini_options]
+markers = ["network: hits the network; skipped when offline / rate-limited"]

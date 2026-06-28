@@ -31,8 +31,7 @@ D=2026-06-26
 meridian ingest    --date $D -a yfinance -a fred -a edgar -a news_rss   # Phase 1: typed events
 meridian featurize --date $D                                            # Phase 2: L1 grading + state + regime
 meridian match     --date $D                                           # Phase 3: poset patterns + audited edges
-python scripts/gen_option_fixtures.py $D NVDA MSFT JPM                  # Phase 5: option-chain snapshot (proxy)
-meridian options   --date $D                                           # Phase 5: GEX surface + dealer-positioning
+meridian options   --date $D -t NVDA -t MSFT -t JPM                    # Phase 5: real chain (yfinance) -> GEX + dealer-positioning
 meridian featurize --date $D                                           # re-grade incl. dealer_pos
 meridian match --patterns gamma_squeeze --date $D                      # Phase 5: the differentiator
 meridian postmortem --date $D                                          # Phase 4: scanner + EOD postmortem (residual + invalidation)

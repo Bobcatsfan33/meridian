@@ -62,6 +62,9 @@ def create_app(cfg: Config | None = None):
                 "tier": ev["confidence"]["tier"],
                 "confidence": ev["confidence"]["value"],
                 "residual": ev["unexplained_residual"],
+                "residual_basis": ev.get("residual_basis"),
+                "data_source": ev.get("data_source"),
+                "proxy_data": ev.get("proxy_data", False),
                 "move_class": ev.get("move_class"),
                 "initiating": ev["timeline"][0]["label"] if ev.get("timeline") else None,
             })

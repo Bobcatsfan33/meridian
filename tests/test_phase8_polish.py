@@ -10,7 +10,7 @@ from meridian.engine.structural import MatchEvent
 from meridian.ingest.clock import market_close_utc
 from meridian.outputs import phrases
 from meridian.outputs.explain import build_evidence
-from meridian.outputs.render import render_card, render_postmortem, render_scanner
+from meridian.outputs.render import render_card, render_scanner
 from meridian.schedule.install import build_plan
 
 TARGET = dt.date(2026, 6, 26)

@@ -115,7 +115,8 @@ CREATE TABLE IF NOT EXISTS filing_events (
 );
 CREATE TABLE IF NOT EXISTS gex_surface (
     ticker VARCHAR, ts TIMESTAMP, strike DOUBLE, expiry DATE,
-    gamma DOUBLE, open_interest DOUBLE, dealer_gamma DOUBLE
+    gamma DOUBLE, open_interest DOUBLE, dealer_gamma DOUBLE,
+    data_source VARCHAR              -- live (real chain) | fixture (synthetic proxy)
 );
 
 -- ---------- predictive engine (Phase 6) ----------

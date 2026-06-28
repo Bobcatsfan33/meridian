@@ -6,7 +6,7 @@ import pathlib
 import pytest
 
 from meridian.config import Config
-from meridian.storage import init_db, connect
+from meridian.storage import init_db
 
 GOLDEN_DIR = pathlib.Path(__file__).parent / "golden"
 

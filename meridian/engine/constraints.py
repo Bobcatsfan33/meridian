@@ -26,9 +26,17 @@ def apply(
     sector_abnormality: float | None,
     insufficient_history: bool,
     feeds_ok: bool,
+    proxy_options: bool = False,
 ) -> ConstraintOutcome:
     notes: list[str] = []
     out_tier = tier
+
+    # R0: gamma read built on SYNTHETIC option data is not tradeable — cap hard at Low.
+    if proxy_options and pattern_id == "gamma_squeeze":
+        new = cap_tier(out_tier, "Low")
+        if new != out_tier:
+            notes.append("PROXY option data (synthetic chain) — not tradeable; capped at Low.")
+            out_tier = new
 
     # R1: price-only options proxy can never be High (no options data to confirm flow).
     if pattern_id == "options_led_proxy":
