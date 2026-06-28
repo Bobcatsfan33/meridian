@@ -1,0 +1,18 @@
+# Equity-flow accumulation (Part B). Abnormal off-exchange / short-sale flow concurrent
+# with an abnormal price move, with no contradicting company catalyst. NO thresholds here
+# (hard rule): equity_flow abnormality is graded in L1 vs the name's own baseline and
+# enters only as a weight. ShortVolumeSpike is daily (aligns with the move); the weekly
+# DarkPoolAccumulation contributes as a presence leg when its week-start aligns.
+id: dark_pool_accumulation
+version: "1"
+description: Abnormal off-exchange / short-sale flow concurrent with the move, no company catalyst.
+roles:
+  S: {family: equity_flow, event_type: ShortVolumeSpike}
+  D: {family: equity_flow, event_type: DarkPoolAccumulation}
+  P: {family: price_volume}
+legs:
+  - {type: present, role: S}        # abnormal short-volume share (daily Reg SHO)
+  - {type: present, role: P}        # the abnormal price move
+  - {type: concurrent, a: S, b: P}  # flow concurrent with the move
+  - {type: present, role: D}        # weekly dark-pool accumulation (0 if not aligned)
+  - {type: absent, family: news}    # no contradicting company catalyst
