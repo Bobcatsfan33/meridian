@@ -90,9 +90,11 @@ def ingest(
         fam.add_row("(none)", "0")
     console.print(fam)
 
-    ad = Table("adapter", "source", "fetched", "normalized", "status", title="Adapter coverage")
+    ad = Table("adapter", "source", "fetched", "normalized", "failures", "status",
+               title="Adapter coverage")
     for s in res.adapter_stats:
         ad.add_row(s.name, s.source, str(s.fetched), str(s.normalized),
+                   ("[yellow]%d[/yellow]" % s.failures) if s.failures else "0",
                    "[red]" + s.error + "[/red]" if s.error else "[green]ok[/green]")
     console.print(ad)
 

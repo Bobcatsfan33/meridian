@@ -28,10 +28,12 @@ adapters:
     enabled: false
     priority: 1
     user_agent: "meridian research contact@example.com"   # SEC requires a real UA
-  news_rss:                       # headlines (coverage-limited free tier)
+  news_rss:                       # Yahoo Finance per-symbol RSS (free, real pubDate)
     enabled: false
     priority: 1
-    feeds: []                     # empty -> built-in WSJ/CNBC defaults
+    scope: movers                 # movers (intraday: watchlist) | universe (EOD: all, throttled)
+    max_req_per_sec: 5            # throttle for universe scope
+    # watchlist: [AAPL, MSFT, NVDA, JPM]   # movers-scope symbols (optional)
   earnings:                       # earnings dates/results (free via yfinance)
     enabled: false
     priority: 1

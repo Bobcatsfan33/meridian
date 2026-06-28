@@ -26,6 +26,7 @@ class AdapterStats:
     source: str
     fetched: int = 0
     normalized: int = 0
+    failures: int = 0       # per-item fetch failures (e.g. per-symbol RSS errors)
     error: str | None = None
 
 
@@ -92,6 +93,7 @@ def run_ingest(
             raws, events = adapter.run(ctx)
             st.fetched = len(raws)
             st.normalized = len(events)
+            st.failures = int(getattr(adapter, "fetch_failures", 0) or 0)
             all_raw.extend(raws)
             for e in events:
                 by_id[e.event_id] = e  # last-writer-wins dedup on stable id
@@ -155,8 +157,30 @@ def _write(cfg: Config, raws: list[RawEvent], events: list[NormalizedEvent]) -> 
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 [_storage_tuple(e) for e in events],
             )
+            _mirror_side_tables(con, events)
     finally:
         con.close()
+
+
+def _mirror_side_tables(con, events: list[NormalizedEvent]) -> None:
+    """Mirror typed events into their side-tables (news_events, filing_events)."""
+    news = [e for e in events if e.family == "news"]
+    if news:
+        con.executemany(
+            "INSERT OR REPLACE INTO news_events (event_id, event_time, ticker, headline, source, "
+            "sentiment, topic) VALUES (?,?,?,?,?,?,?)",
+            [(e.event_id, e.as_storage_row()["event_time"], e.ticker,
+              (e.payload or {}).get("headline"), e.source, None, None) for e in news],
+        )
+    filings = [e for e in events if e.family == "filing"]
+    if filings:
+        con.executemany(
+            "INSERT OR REPLACE INTO filing_events (event_id, event_time, ticker, form_type, "
+            "accession, url) VALUES (?,?,?,?,?,?)",
+            [(e.event_id, e.as_storage_row()["event_time"], e.ticker,
+              (e.payload or {}).get("form_type"), (e.payload or {}).get("accession"),
+              (e.payload or {}).get("url")) for e in filings],
+        )
 
 
 def _storage_tuple(e: NormalizedEvent):
