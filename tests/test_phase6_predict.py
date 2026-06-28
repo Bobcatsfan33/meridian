@@ -10,7 +10,6 @@ from meridian.predict.backtest import backtest
 from meridian.predict.calibrate import brier_score, reliability_curve
 from meridian.predict.forward import build_profile
 from meridian.predict.label import Outcome, label_date_range
-from meridian.ingest.clock import market_close_utc
 from meridian.storage import connect
 
 TARGET = dt.date(2026, 5, 20)

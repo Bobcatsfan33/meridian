@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime as dt
 import json
 
-from tests.conftest import golden
 
 from meridian.config import Config
 from meridian.engine import featurize_grade as fg
@@ -83,8 +82,9 @@ def test_options_ingest_and_gamma_squeeze_fires(tmp_db, tmp_path):
                        "type": "call" if c.is_call else "put",
                        "open_interest": c.open_interest, "iv": c.iv} for c in snap.contracts],
     }))
-    cfg.raw.setdefault("adapters", {})["options"] = {
-        "enabled": True, "source": "fixture", "fixtures_dir": str(tmp_path / "opt")}
+    cfg.raw.setdefault("adapters", {})["options_source"] = "fixture"
+    cfg.raw["adapters"]["options"] = {
+        "enabled": True, "fixtures_dir": str(tmp_path / "opt")}
 
     # seed a price_volume event + ticker_state so P binds and grades
     from meridian.ingest.clock import market_close_utc

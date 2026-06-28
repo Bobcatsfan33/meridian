@@ -13,7 +13,7 @@ from ..ingest.clock import UTC, market_close_utc
 from ..storage import connect
 from .events import derive_events
 from .gex import build_surface
-from .source import ChainSnapshot, fixture_tickers, load_chain
+from .source import ChainSnapshot, default_tickers, load_chain
 
 RELIABILITY = 0.70  # snapshot proxy (no paid feed): data-quality confidence
 
@@ -32,7 +32,7 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
                 now: dt.datetime | None = None) -> OptionsSummary:
     now = now or dt.datetime.now(UTC)
     r = float((cfg.raw.get("adapters", {}).get("options", {}) or {}).get("risk_free_rate", 0.0))
-    targets = tickers or fixture_tickers(cfg, target_date)
+    targets = tickers or default_tickers(cfg, target_date)
     close_ts = market_close_utc(target_date).replace(tzinfo=None)
 
     con = connect(cfg.duckdb_path)
@@ -50,19 +50,21 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
                 continue
             summary.n_tickers += 1
             summary.tickers.append(ticker)
+            src_label = f"options_{snap.data_source}"
             for spec in specs:
                 eid = make_event_id("options", spec["event_type"], ticker, market_close_utc(target_date))
-                payload = json.dumps(spec["payload"], default=str)
+                spec_payload = {**spec["payload"], "data_source": snap.data_source}
+                payload = json.dumps(spec_payload, default=str)
                 norm_rows.append((eid, close_ts, now.astimezone(UTC).replace(tzinfo=None), ticker,
-                                  spec["event_type"], "dealer_pos", f"options_{_src(cfg)}",
+                                  spec["event_type"], "dealer_pos", src_label,
                                   RELIABILITY, None, [], None, payload))
                 raw_rows.append((f"raw_{eid}", now.astimezone(UTC).replace(tzinfo=None),
-                                 f"options_{_src(cfg)}", ticker, payload))
+                                 src_label, ticker, payload))
                 summary.event_type_counts[spec["event_type"]] = \
                     summary.event_type_counts.get(spec["event_type"], 0) + 1
             for s in surface.per_strike:
                 surf_rows.append((ticker, close_ts, s.strike, None, None,
-                                  s.call_oi + s.put_oi, s.dealer_gamma))
+                                  s.call_oi + s.put_oi, s.dealer_gamma, snap.data_source))
             state_rows.append((ticker, close_ts, _atm_iv(snap), snap.iv_rank,
                                surface.net_gex, surface.gamma_flip, surface.call_wall, surface.put_wall))
 
@@ -72,10 +74,6 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
         return summary
     finally:
         con.close()
-
-
-def _src(cfg) -> str:
-    return (cfg.raw.get("adapters", {}).get("options", {}) or {}).get("source", "fixture")
 
 
 def _atm_iv(snap: ChainSnapshot) -> float | None:
@@ -108,8 +106,8 @@ def _write(con, norm_rows, raw_rows, surf_rows, state_rows) -> None:
             "VALUES (?,?,?,?,?)", raw_rows)
     if surf_rows:
         con.executemany(
-            "INSERT INTO gex_surface (ticker,ts,strike,expiry,gamma,open_interest,dealer_gamma) "
-            "VALUES (?,?,?,?,?,?,?)", surf_rows)
+            "INSERT INTO gex_surface (ticker,ts,strike,expiry,gamma,open_interest,dealer_gamma,"
+            "data_source) VALUES (?,?,?,?,?,?,?,?)", surf_rows)
     if state_rows:
         con.executemany(
             "INSERT INTO options_state_1m (ticker,ts,iv,iv_pctile,net_gex,gamma_flip,call_wall,put_wall) "

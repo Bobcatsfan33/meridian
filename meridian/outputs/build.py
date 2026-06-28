@@ -54,6 +54,7 @@ def build_explanations(cfg: Config, target_date: dt.date,
             explained_fraction, residual_basis = _return_residual(
                 con, fr["pattern_id"], fr["ticker"], etf, target_date,
                 abn_map.get(fr["ticker"]), cfg)
+            data_source = _options_data_source(bindings)
 
             ev = build_evidence(
                 ticker=fr["ticker"], pattern_id=pat.id, pattern_ver=pat.version,
@@ -63,6 +64,7 @@ def build_explanations(cfg: Config, target_date: dt.date,
                 insufficient_history=insufficient, feeds_ok=feeds_ok, cfg_scoring=scoring_cfg,
                 window_start=fr["window_start"], window_end=fr["window_end"], catalysts=catalysts,
                 explained_fraction=explained_fraction, residual_basis=residual_basis,
+                data_source=data_source,
             )
             _assert_residual(ev, float(scoring_cfg.get("min_residual", 0.05)))
             evidences.append(ev)
@@ -110,6 +112,16 @@ def _return_residual(con, pattern_id, ticker, etf, target_date, abnormal_move, c
     residual_return = abnormal_move - attributed
     residual_fraction = min(1.0, max(min_resid, abs(residual_return) / abs(abnormal_move)))
     return 1.0 - residual_fraction, "return"
+
+
+def _options_data_source(bindings: dict) -> str:
+    """If any bound dealer-positioning event came from a synthetic chain, the read is
+    proxy data. Defaults to 'live' when no options legs are involved."""
+    for ev in bindings.values():
+        if ev is not None and ev.family == "dealer_pos":
+            if (ev.payload or {}).get("data_source") == "fixture":
+                return "fixture"
+    return "live"
 
 
 def _ret_on(con, ticker, close_ts):

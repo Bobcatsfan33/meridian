@@ -73,7 +73,6 @@ def test_match_idempotent(tmp_db):
     run_match(cfg, TARGET)
     con = connect(tmp_db)
     n = con.execute("SELECT count(*) FROM pattern_firings").fetchone()[0]
-    e = con.execute("SELECT count(*) FROM event_edges").fetchone()[0]
     con.close()
     a = run_match(cfg, TARGET)
     assert n == a.n_firings  # no duplication across re-runs

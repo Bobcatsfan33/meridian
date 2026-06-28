@@ -28,9 +28,9 @@ def _build(tmp_db, abnormal_move: float, beta_factor: float) -> dict:
     cfg = Config.load()
     cfg.raw.setdefault("storage", {})["duckdb_path"] = str(tmp_db)
     con = connect(tmp_db)
-    con.execute("DELETE FROM graded_events"); con.execute("DELETE FROM normalized_events")
-    con.execute("DELETE FROM pattern_firings"); con.execute("DELETE FROM expected_behavior_1m")
-    con.execute("DELETE FROM ticker_state_1m"); con.execute("DELETE FROM regimes_daily")
+    for tbl in ("graded_events", "normalized_events", "pattern_firings",
+                "expected_behavior_1m", "ticker_state_1m", "regimes_daily"):
+        con.execute(f"DELETE FROM {tbl}")
     _seed(con, "g_aapl", "AAPL", "DailyBar", "price_volume", 0.9, {"ret_1m": abnormal_move})
     _seed(con, "g_xlk", "XLK", "ETFBar", "sector_peer", 0.8, {})
     con.execute("INSERT INTO regimes_daily (trade_date, regime_label, regime_tags) VALUES (?,?,?)",
