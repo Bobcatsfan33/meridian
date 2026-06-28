@@ -1,0 +1,13 @@
+event_time,ticker,event_type,family,value,payload_json
+2026-06-26T20:00:00+00:00,AAPL,DailyBar,price_volume,283.78,"{""open"":275.0,""high"":285.95,""low"":274.21,""close"":283.78,""volume"":261693600,""ret_1m"":0.031}"
+2026-06-26T20:00:00+00:00,MSFT,DailyBar,price_volume,372.97,"{""open"":368.0,""high"":374.0,""low"":366.5,""close"":372.97,""volume"":22000000,""ret_1m"":0.012}"
+2026-06-26T20:00:00+00:00,NVDA,DailyBar,price_volume,192.53,"{""open"":180.0,""high"":193.0,""low"":179.5,""close"":192.53,""volume"":410000000,""ret_1m"":0.072}"
+2026-06-26T14:05:00+00:00,AAPL,HeadlineHit,news,,"{""headline"":""Apple unveils new Mac chip roadmap"",""url"":""https://example.com/a""}"
+2026-06-26T13:30:00+00:00,NVDA,HeadlineHit,news,,"{""headline"":""NVIDIA expands data-center supply"",""url"":""https://example.com/n""}"
+2026-06-26T12:00:00+00:00,MSFT,Filing8K,filing,,"{""form_type"":""8-K"",""url"":""https://sec.gov/x""}"
+2026-06-26T20:00:00+00:00,AAPL,ShortVolumeSpike,equity_flow,0.41,"{""short_volume"":520618.0,""total_volume"":1269800.0,""short_pct"":0.41}"
+2026-06-26T20:00:00+00:00,NVDA,ShortVolumeSpike,equity_flow,0.55,"{""short_volume"":2255000.0,""total_volume"":4100000.0,""short_pct"":0.55}"
+2026-06-25T20:00:00+00:00,AAPL,DailyBar,price_volume,275.15,"{""open"":287.4,""high"":288.8,""low"":273.75,""close"":275.15,""volume"":107013700,""ret_1m"":-0.044}"
+2026-06-25T20:00:00+00:00,MSFT,DailyBar,price_volume,368.5,"{""open"":370.0,""high"":371.0,""low"":366.0,""close"":368.5,""volume"":19500000,""ret_1m"":-0.004}"
+2026-06-25T20:00:00+00:00,NVDA,DailyBar,price_volume,179.6,"{""open"":182.0,""high"":183.5,""low"":178.9,""close"":179.6,""volume"":300000000,""ret_1m"":-0.013}"
+2026-06-25T18:00:00+00:00,MSFT,HeadlineHit,news,,"{""headline"":""Microsoft cloud growth steady"",""url"":""https://example.com/m""}"

@@ -643,6 +643,7 @@ def relearn(config: str = typer.Option(None, help="Path to config.yaml")):
 def serve(
     host: str = typer.Option("127.0.0.1", help="Bind host (local only by default)"),
     port: int = typer.Option(8765, help="Port"),
+    db: str = typer.Option(None, help="DB path to serve (default: config storage.duckdb_path)"),
     config: str = typer.Option(None, help="Path to config.yaml"),
 ):
     """Serve the local dashboard (cards, scanner, postmortem) at http://host:port/."""
@@ -651,6 +652,8 @@ def serve(
     from .api import create_app
 
     cfg = Config.load(config)
+    if db:
+        cfg.raw.setdefault("storage", {})["duckdb_path"] = db
     if not cfg.duckdb_path.exists():
         console.print("[red]DB not found.[/red] Run `meridian init` first.")
         raise typer.Exit(1)
@@ -703,6 +706,43 @@ def install_daily(
     else:
         console.print(f"[bold]Add these crontab lines[/bold] ({plan.notes}):\n{plan.content}")
         console.print(f"  {plan.activate_cmd}")
+
+
+@app.command()
+def demo(
+    db: str = typer.Option(None, help="Sample DB path (default: data/demo.duckdb)"),
+):
+    """Offline, deterministic end-to-end demo on a tiny committed fixture (no keys, no network)."""
+    from .demo import run_demo
+
+    res = run_demo(db_path=db)
+    console.print(f"[bold]Meridian demo[/bold]  date={res.date}  db={res.db_path}")
+    console.print(f"  steps={'→'.join(res.steps)}")
+    console.print(f"  events={res.n_events}  firings={res.n_firings}  "
+                  f"cards=[green]{res.n_cards}[/green]")
+    if res.top:
+        t = Table("ticker", "pattern", "confidence", title="Top cards")
+        for ticker, pat, conf in res.top:
+            t.add_row(ticker, pat, _num(conf))
+        console.print(t)
+    if res.n_cards < 1:
+        console.print("[red]✗ demo produced no cards.[/red]")
+        raise typer.Exit(1)
+
+    # show a real card inline so the user sees output in this one command
+    from .demo import DEMO_DATE
+    from .outputs.build import build_explanations
+    from .outputs.render import render_card
+
+    cfg = Config.load()
+    cfg.raw.setdefault("storage", {})["duckdb_path"] = res.db_path
+    evs = build_explanations(cfg, DEMO_DATE)
+    if evs:
+        top = max(evs, key=lambda e: e["confidence"]["value"])
+        console.print("\n[bold]Sample card:[/bold]")
+        console.print(render_card(top))
+    console.print("[green]✓ demo complete (offline, no keys).[/green] View the full dashboard:")
+    console.print(f"    meridian serve --db {res.db_path}   →   open http://127.0.0.1:8765/")
 
 
 @app.command()
