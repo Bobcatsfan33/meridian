@@ -39,6 +39,31 @@ meridian card --ticker JPM --date $D --pattern gamma_squeeze          # one "why
 ```
 Or run the whole EOD batch: `meridian run-day --date $D`.
 
+## Live data feeds (free baseline + optional Massive)
+Three tiers of resilience — Meridian always runs on the free baseline; Massive is an
+opt-in enhancement that can never break the pipeline.
+
+| Feed | Provides | Key? | Fallback |
+|---|---|---|---|
+| yfinance | daily + intraday bars (stocks/ETFs/index); live option chains | none | — (baseline) |
+| FRED | macro series (yields, rates, VIX, dollar) | none (keyless CSV) | — |
+| SEC EDGAR | filings (8-K, S-3, 13D/G, Form 4, 10-Q/K) | none | — |
+| Yahoo RSS | per-symbol headlines with real pubDate | none | — |
+| **FINRA** | short-volume + dark-pool (off-exchange) flow — `equity_flow` | **none, no rate limit** | — (robust baseline) |
+| **Massive** (opt-in) | grouped-daily bars, **real option chains/greeks**, trade detail | `MASSIVE_API_KEY` | yfinance + FINRA |
+
+Massive sits behind a token-bucket throttle, a circuit breaker, and a local last-good
+cache; if the key is missing, the free tier rate-limits, or the service hiccups, it trips
+out and the pipeline finishes on the baseline. Provenance (`data_source`) is recorded on
+every row; gamma reads on synthetic fixtures are PROXY-banner-flagged and tier-capped,
+while Massive/yfinance-live reads are full-tier eligible.
+
+```bash
+meridian data-report        # rows/day by family + source, firings, feed health (breaker/throttle)
+meridian backup             # snapshot data/meridian.duckdb -> data/backups/
+meridian relearn            # weekly: refresh outcomes + walk-forward calibration; report gates
+```
+
 ## Predictive engine (Phase 6)
 ```bash
 meridian backfill  --start 2026-05-18 --end 2026-05-29 -a yfinance     # accumulate firing history
