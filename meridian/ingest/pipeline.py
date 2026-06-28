@@ -101,7 +101,7 @@ def run_ingest(
             st.error = f"{type(exc).__name__}: {exc}"
         stats.append(st)
 
-    events = list(by_id.values())
+    events = _resolve_precedence(list(by_id.values()))
     align = alignment_report(events)
     violations = lookahead_violations(events)
 
@@ -121,6 +121,26 @@ def run_ingest(
         alignment=align,
         lookahead_violations=len(violations),
     )
+
+
+# For overlapping bar data, prefer the higher-precedence source (data quality), recording
+# data_source on every row so provenance is auditable. NOT the same as adapter run-order.
+_BAR_FAMILIES = {"price_volume", "sector_peer", "macro"}
+_SOURCE_PRECEDENCE = {"massive": 2, "yfinance": 1}
+
+
+def _resolve_precedence(events: list[NormalizedEvent]) -> list[NormalizedEvent]:
+    best: dict[tuple, NormalizedEvent] = {}
+    passthrough: list[NormalizedEvent] = []
+    for e in events:
+        if e.family not in _BAR_FAMILIES:
+            passthrough.append(e)
+            continue
+        key = (e.ticker, e.event_type, e.as_storage_row()["event_time"])
+        cur = best.get(key)
+        if cur is None or _SOURCE_PRECEDENCE.get(e.source, 0) > _SOURCE_PRECEDENCE.get(cur.source, 0):
+            best[key] = e
+    return passthrough + list(best.values())
 
 
 def _ctx_for(base: IngestContext, cfg: Config, adapter: Adapter) -> IngestContext:

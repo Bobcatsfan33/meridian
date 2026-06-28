@@ -64,6 +64,7 @@ class YFinanceAdapter(Adapter):
             family, event_type, sector = _role_to_family(role), _role_to_event_type(role), None
         payload = {k: raw.payload[k] for k in ("open", "high", "low", "close", "volume") if k in raw.payload}
         payload["role"] = role
+        payload["data_source"] = "yfinance"   # provenance (precedence: massive > yfinance)
         return [
             self._event(
                 event_type=event_type,

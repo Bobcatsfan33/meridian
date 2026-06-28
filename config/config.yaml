@@ -56,6 +56,17 @@ adapters:
     # tickers: [AAPL, MSFT, NVDA, JPM]      # liquid names to scan on a live run (optional)
   robinhood:   {enabled: false, priority: 2}   # MCP-backed; quotes/options/fundamentals
   thetadata:   {enabled: false, priority: 3}   # PAID, optional (Phase 6 gamma fidelity only)
+  massive:                        # OPTIONAL fail-safe (Polygon-compatible). Never required.
+    enabled: false                # OPT-IN: set true + MASSIVE_API_KEY to use
+    priority: 2
+    api_key_env: MASSIVE_API_KEY
+    base_url: "https://api.massive.com"
+    rate_limit_per_min: 5         # free Basic plan
+    daily_delayed: true           # free tier is EOD/delayed
+    timeout: 15
+    retries: 2
+    circuit_breaker: {threshold: 3, cooldown_seconds: 300}
+    options_source: true          # when healthy, source real option chains from Massive
 
 run_modes:
   eod_batch:
