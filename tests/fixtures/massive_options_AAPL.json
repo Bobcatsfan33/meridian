@@ -1,0 +1,11 @@
+{"status":"OK","results":[
+  {"details":{"strike_price":280,"expiration_date":"2026-07-17","contract_type":"call"},
+   "open_interest":12000,"implied_volatility":0.55,"greeks":{"gamma":0.02},
+   "underlying_asset":{"ticker":"AAPL","price":283.78}},
+  {"details":{"strike_price":270,"expiration_date":"2026-07-17","contract_type":"put"},
+   "open_interest":9000,"implied_volatility":0.58,"greeks":{"gamma":0.018},
+   "underlying_asset":{"ticker":"AAPL","price":283.78}},
+  {"details":{"strike_price":290,"expiration_date":"2026-07-17","contract_type":"call"},
+   "open_interest":3000,"implied_volatility":0.52,"greeks":{"gamma":0.015},
+   "underlying_asset":{"ticker":"AAPL","price":283.78}}
+]}

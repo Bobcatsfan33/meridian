@@ -13,7 +13,7 @@ from ..ingest.clock import UTC, market_close_utc
 from ..storage import connect
 from .events import derive_events
 from .gex import build_surface
-from .source import ChainSnapshot, default_tickers, load_chain
+from .source import ChainSnapshot, default_tickers, load_chain, options_source
 
 RELIABILITY = 0.70  # snapshot proxy (no paid feed): data-quality confidence
 
@@ -34,6 +34,10 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
     r = float((cfg.raw.get("adapters", {}).get("options", {}) or {}).get("risk_free_rate", 0.0))
     targets = tickers or default_tickers(cfg, target_date)
     close_ts = market_close_utc(target_date).replace(tzinfo=None)
+    massive_client = None
+    if options_source(cfg) == "massive":
+        from ..adapters.massive import client_from_config
+        massive_client = client_from_config(cfg)   # shared across tickers (one breaker/bucket)
 
     con = connect(cfg.duckdb_path)
     summary = OptionsSummary(target_date=target_date)
@@ -41,7 +45,7 @@ def run_options(cfg: Config, target_date: dt.date, tickers: list[str] | None = N
         _wipe(con, target_date, close_ts)
         norm_rows, raw_rows, surf_rows, state_rows = [], [], [], []
         for ticker in targets:
-            snap = load_chain(cfg, target_date, ticker)
+            snap = load_chain(cfg, target_date, ticker, massive_client=massive_client)
             if snap is None or not snap.contracts:
                 continue
             surface = build_surface(target_date, snap.spot, snap.contracts, r=r)

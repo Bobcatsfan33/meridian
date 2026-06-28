@@ -32,16 +32,62 @@ class ChainSnapshot:
 
 def options_source(cfg) -> str:
     a = cfg.raw.get("adapters", {}) or {}
+    mas = a.get("massive", {}) or {}
+    if mas.get("enabled") and mas.get("options_source", True):
+        return "massive"   # real chains from Massive when enabled (falls back if unhealthy)
     return a.get("options_source") or (a.get("options", {}) or {}).get("source") or DEFAULT_SOURCE
 
 
-def load_chain(cfg, target_date: dt.date, ticker: str) -> ChainSnapshot | None:
+def load_chain(cfg, target_date: dt.date, ticker: str, massive_client=None) -> ChainSnapshot | None:
     src = options_source(cfg)
     if src == "robinhood":
         return _from_robinhood(cfg, target_date, ticker)
     if src == "fixture":
         return _from_fixture(cfg, target_date, ticker)
+    if src == "massive":
+        snap = _from_massive(cfg, target_date, ticker, massive_client)
+        if snap is not None:
+            return snap
+        return _from_yfinance(cfg, target_date, ticker)  # Massive unhealthy/empty -> fall back
     return _from_yfinance(cfg, target_date, ticker)
+
+
+def parse_massive_chain(body: dict, ticker: str) -> ChainSnapshot | None:
+    """Pure parse of a Massive/Polygon option-chain snapshot -> ChainSnapshot. Greeks are
+    recomputed locally from IV downstream; we take strike/expiry/type/OI/IV here. data_source=massive."""
+    results = (body or {}).get("results") or []
+    spot = None
+    contracts: list[ChainContract] = []
+    for rec in results:
+        ua = rec.get("underlying_asset") or {}
+        if spot is None and ua.get("price"):
+            spot = float(ua["price"])
+        d = rec.get("details") or {}
+        strike, exp, ctype = d.get("strike_price"), d.get("expiration_date"), d.get("contract_type")
+        oi, iv = rec.get("open_interest"), rec.get("implied_volatility")
+        if strike is None or exp is None or ctype is None or not oi or not iv:
+            continue
+        contracts.append(ChainContract(float(strike), dt.date.fromisoformat(exp),
+                                        ctype == "call", float(oi), float(iv)))
+    if spot is None or not contracts:
+        return None
+    return ChainSnapshot(ticker=ticker, spot=spot, iv_rank=None,
+                         contracts=contracts, data_source="massive")
+
+
+def _from_massive(cfg, target_date: dt.date, ticker: str, client) -> ChainSnapshot | None:
+    if client is None:
+        from ..adapters.massive import client_from_config
+
+        client = client_from_config(cfg)
+    if client is None or not client.healthy:
+        return None
+    from ..adapters.massive import OPTION_CHAIN
+
+    body = client.get(OPTION_CHAIN.format(underlying=ticker))
+    if not body:
+        return None
+    return parse_massive_chain(body, ticker)
 
 
 def default_tickers(cfg, target_date: dt.date) -> list[str]:
