@@ -32,6 +32,7 @@ FAMILIES = frozenset(
         "liquidity",
         "attention",
         "earnings",
+        "equity_flow",   # FINRA short-volume + dark-pool (off-exchange) flow (Part B)
     }
 )
 

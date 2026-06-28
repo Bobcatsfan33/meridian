@@ -19,6 +19,7 @@ adapters:
   yfinance:                       # price/volume for stocks + ETFs + index/macro
     enabled: false
     priority: 1
+    intraday_interval: "5m"       # intraday bar interval for the intraday loop (Step A2)
   fred:                           # macro: yields, rates, VIX, dollar (keyless CSV)
     enabled: false
     priority: 1
@@ -28,15 +29,22 @@ adapters:
     enabled: false
     priority: 1
     user_agent: "meridian research contact@example.com"   # SEC requires a real UA
-  news_rss:                       # headlines (coverage-limited free tier)
+  news_rss:                       # Yahoo Finance per-symbol RSS (free, real pubDate)
     enabled: false
     priority: 1
-    feeds: []                     # empty -> built-in WSJ/CNBC defaults
+    scope: movers                 # movers (intraday: watchlist) | universe (EOD: all, throttled)
+    max_req_per_sec: 5            # throttle for universe scope
+    # watchlist: [AAPL, MSFT, NVDA, JPM]   # movers-scope symbols (optional)
   earnings:                       # earnings dates/results (free via yfinance)
     enabled: false
     priority: 1
     max_symbols: 60               # per-ticker scan cap; bulk path is Robinhood MCP
     workers: 8
+  finra:                          # equity flow: short-volume + dark-pool (FREE, no key/limit)
+    enabled: true                 # safe baseline — keyless, never rate-limited
+    priority: 1
+    ats_max_symbols: 40           # per-symbol ATS (dark-pool) scan cap
+    # ats_watchlist: [AAPL, MSFT, NVDA]   # restrict ATS scan (optional)
   # Options source (Phase 5/Issue 3). Real-first. `fixture` is for tests / explicit dev
   # only — fixture-sourced gamma reads are PROXY-banner-flagged and tier-capped.
   options_source: yfinance        # yfinance (default, real) | robinhood | fixture
@@ -48,6 +56,17 @@ adapters:
     # tickers: [AAPL, MSFT, NVDA, JPM]      # liquid names to scan on a live run (optional)
   robinhood:   {enabled: false, priority: 2}   # MCP-backed; quotes/options/fundamentals
   thetadata:   {enabled: false, priority: 3}   # PAID, optional (Phase 6 gamma fidelity only)
+  massive:                        # OPTIONAL fail-safe (Polygon-compatible). Never required.
+    enabled: false                # OPT-IN: set true + MASSIVE_API_KEY to use
+    priority: 2
+    api_key_env: MASSIVE_API_KEY
+    base_url: "https://api.massive.com"
+    rate_limit_per_min: 5         # free Basic plan
+    daily_delayed: true           # free tier is EOD/delayed
+    timeout: 15
+    retries: 2
+    circuit_breaker: {threshold: 3, cooldown_seconds: 300}
+    options_source: true          # when healthy, source real option chains from Massive
 
 run_modes:
   eod_batch:

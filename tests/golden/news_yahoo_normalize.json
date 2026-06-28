@@ -1,0 +1,56 @@
+[
+  {
+    "confidence": 0.8,
+    "event_id": "evt_52d2c27c55d03f35017c",
+    "event_time": "2026-06-26T14:05:00+00:00",
+    "event_type": "HeadlineHit",
+    "family": "news",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 84300.0,
+    "parent_event_id": null,
+    "payload": {
+      "guid": "aaaa1111-aaaa-1111-aaaa-111111111111",
+      "headline": "Apple (AAPL) Plans Mac Chip Roadmap Shift Toward AI",
+      "matched_symbols": [
+        "AAPL"
+      ],
+      "source_feed": "yahoo_rss",
+      "url": "https://finance.yahoo.com/news/apple-aapl-mac-chip.html"
+    },
+    "related_symbols": [
+      "AAPL"
+    ],
+    "sector": "Information Technology",
+    "source": "yahoo_rss",
+    "ticker": "AAPL"
+  },
+  {
+    "confidence": 0.8,
+    "event_id": "evt_936095713350461500de",
+    "event_time": "2026-06-26T18:30:00+00:00",
+    "event_type": "HeadlineHit",
+    "family": "news",
+    "ingest_time": "2026-06-27T13:30:00+00:00",
+    "latency_seconds": 68400.0,
+    "parent_event_id": null,
+    "payload": {
+      "guid": "bbbb2222-bbbb-2222-bbbb-222222222222",
+      "headline": "NVDA and AMD rally as Apple gains chip share",
+      "matched_symbols": [
+        "NVDA",
+        "AMD",
+        "AAPL"
+      ],
+      "source_feed": "yahoo_rss",
+      "url": "https://finance.yahoo.com/news/nvda-amd-apple.html"
+    },
+    "related_symbols": [
+      "NVDA",
+      "AMD",
+      "AAPL"
+    ],
+    "sector": "Information Technology",
+    "source": "yahoo_rss",
+    "ticker": "AAPL"
+  }
+]

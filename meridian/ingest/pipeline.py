@@ -26,6 +26,7 @@ class AdapterStats:
     source: str
     fetched: int = 0
     normalized: int = 0
+    failures: int = 0       # per-item fetch failures (e.g. per-symbol RSS errors)
     error: str | None = None
 
 
@@ -92,6 +93,7 @@ def run_ingest(
             raws, events = adapter.run(ctx)
             st.fetched = len(raws)
             st.normalized = len(events)
+            st.failures = int(getattr(adapter, "fetch_failures", 0) or 0)
             all_raw.extend(raws)
             for e in events:
                 by_id[e.event_id] = e  # last-writer-wins dedup on stable id
@@ -99,7 +101,7 @@ def run_ingest(
             st.error = f"{type(exc).__name__}: {exc}"
         stats.append(st)
 
-    events = list(by_id.values())
+    events = _resolve_precedence(list(by_id.values()))
     align = alignment_report(events)
     violations = lookahead_violations(events)
 
@@ -119,6 +121,26 @@ def run_ingest(
         alignment=align,
         lookahead_violations=len(violations),
     )
+
+
+# For overlapping bar data, prefer the higher-precedence source (data quality), recording
+# data_source on every row so provenance is auditable. NOT the same as adapter run-order.
+_BAR_FAMILIES = {"price_volume", "sector_peer", "macro"}
+_SOURCE_PRECEDENCE = {"massive": 2, "yfinance": 1}
+
+
+def _resolve_precedence(events: list[NormalizedEvent]) -> list[NormalizedEvent]:
+    best: dict[tuple, NormalizedEvent] = {}
+    passthrough: list[NormalizedEvent] = []
+    for e in events:
+        if e.family not in _BAR_FAMILIES:
+            passthrough.append(e)
+            continue
+        key = (e.ticker, e.event_type, e.as_storage_row()["event_time"])
+        cur = best.get(key)
+        if cur is None or _SOURCE_PRECEDENCE.get(e.source, 0) > _SOURCE_PRECEDENCE.get(cur.source, 0):
+            best[key] = e
+    return passthrough + list(best.values())
 
 
 def _ctx_for(base: IngestContext, cfg: Config, adapter: Adapter) -> IngestContext:
@@ -155,8 +177,44 @@ def _write(cfg: Config, raws: list[RawEvent], events: list[NormalizedEvent]) -> 
                 "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
                 [_storage_tuple(e) for e in events],
             )
+            _mirror_side_tables(con, events)
     finally:
         con.close()
+
+
+def _mirror_side_tables(con, events: list[NormalizedEvent]) -> None:
+    """Mirror typed events into their side-tables (news_events, filing_events)."""
+    news = [e for e in events if e.family == "news"]
+    if news:
+        con.executemany(
+            "INSERT OR REPLACE INTO news_events (event_id, event_time, ticker, headline, source, "
+            "sentiment, topic) VALUES (?,?,?,?,?,?,?)",
+            [(e.event_id, e.as_storage_row()["event_time"], e.ticker,
+              (e.payload or {}).get("headline"), e.source, None, None) for e in news],
+        )
+    filings = [e for e in events if e.family == "filing"]
+    if filings:
+        con.executemany(
+            "INSERT OR REPLACE INTO filing_events (event_id, event_time, ticker, form_type, "
+            "accession, url) VALUES (?,?,?,?,?,?)",
+            [(e.event_id, e.as_storage_row()["event_time"], e.ticker,
+              (e.payload or {}).get("form_type"), (e.payload or {}).get("accession"),
+              (e.payload or {}).get("url")) for e in filings],
+        )
+    flow = [e for e in events if e.family == "equity_flow"]
+    if flow:
+        # mirror into equity_flow_state — the L1 baseline source (idempotent on ticker+ts)
+        for e in flow:
+            row = e.as_storage_row()
+            p = e.payload or {}
+            con.execute(
+                "DELETE FROM equity_flow_state WHERE ticker=? AND ts=? AND "
+                "((? IS NOT NULL AND short_pct IS NOT NULL) OR (? IS NOT NULL AND off_exchange_share IS NOT NULL))",
+                [e.ticker, row["event_time"], p.get("short_pct"), p.get("off_exchange_share")])
+            con.execute(
+                "INSERT INTO equity_flow_state (ticker, ts, short_pct, off_exchange_share, data_source) "
+                "VALUES (?,?,?,?,?)",
+                [e.ticker, row["event_time"], p.get("short_pct"), p.get("off_exchange_share"), e.source])
 
 
 def _storage_tuple(e: NormalizedEvent):

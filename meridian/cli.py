@@ -90,9 +90,11 @@ def ingest(
         fam.add_row("(none)", "0")
     console.print(fam)
 
-    ad = Table("adapter", "source", "fetched", "normalized", "status", title="Adapter coverage")
+    ad = Table("adapter", "source", "fetched", "normalized", "failures", "status",
+               title="Adapter coverage")
     for s in res.adapter_stats:
         ad.add_row(s.name, s.source, str(s.fetched), str(s.normalized),
+                   ("[yellow]%d[/yellow]" % s.failures) if s.failures else "0",
                    "[red]" + s.error + "[/red]" if s.error else "[green]ok[/green]")
     console.print(ad)
 
@@ -125,6 +127,23 @@ def _fmt(x: float) -> str:
     if abs(x) >= 60:
         return f"{x/60:.1f}m"
     return f"{x:.0f}s"
+
+
+@app.command(name="ingest-intraday")
+def ingest_intraday(
+    date: str = typer.Option(..., help="Trade date, YYYY-MM-DD"),
+    interval: str = typer.Option(None, help="Bar interval (default from config, e.g. 5m)"),
+    ticker: list[str] = typer.Option(None, "--ticker", "-t", help="Symbols (repeatable)"),
+    config: str = typer.Option(None, help="Path to config.yaml"),
+):
+    """Ingest intraday bars into ticker_state_1m (ts = bar close UTC). Daily ingest unchanged."""
+    from .state.intraday import run_intraday
+
+    cfg = Config.load(config)
+    target = _require_date(cfg, date)
+    res = run_intraday(cfg, target, interval=interval, symbols=ticker or None)
+    console.print(f"[bold]Intraday {res.target_date}[/bold]  interval={res.interval}  "
+                  f"symbols={res.n_symbols}  ticker_state_rows=[green]{res.n_rows}[/green]")
 
 
 @app.command()
@@ -537,9 +556,87 @@ def run_day(
     target = _require_date(cfg, date)
     res = run_postclose(cfg, target, adapters=adapter or None)
     console.print(f"[bold]Day run {res.target_date}[/bold]  steps={'→'.join(res.steps)}")
-    console.print(f"  normalized={res.normalized}  graded={res.graded}  "
-                  f"firings={res.firings}  explanations=[green]{res.explanations}[/green]")
+    console.print(f"  normalized={res.normalized}  graded={res.graded}  firings={res.firings}  "
+                  f"options={res.options_events}  flow_firings={res.flow_firings}  "
+                  f"explanations=[green]{res.explanations}[/green]  labeled={res.labeled}")
     console.print(f"[green]✓ done — view with[/green] meridian postmortem --date {target}")
+
+
+@app.command(name="data-report")
+def data_report(config: str = typer.Option(None, help="Path to config.yaml")):
+    """Show rows/day by family + source, firings/pattern, outcome samples, and feed health."""
+    from .reporting import build_data_report
+
+    cfg = Config.load(config)
+    if not cfg.duckdb_path.exists():
+        console.print("[red]DB not found.[/red]")
+        raise typer.Exit(1)
+    rep = build_data_report(cfg)
+
+    t = Table("family", "rows", "last event date", title="normalized_events by family")
+    for fam, n, last in rep.by_family:
+        t.add_row(fam, str(n), str(last))
+    console.print(t)
+
+    s = Table("source", "rows", "last ingest", title="by source")
+    for src, n, last in rep.by_source:
+        s.add_row(src, str(n), str(last))
+    console.print(s)
+
+    f = Table("pattern", "firings", title="pattern firings")
+    for pid, n in rep.firings:
+        f.add_row(pid, str(n))
+    console.print(f)
+
+    o = Table("pattern", "regime", "outcomes", title="outcome sample size (pattern × regime)")
+    for pid, regime, n in rep.outcomes[:30]:
+        o.add_row(pid, regime or "—", str(n))
+    if rep.outcomes:
+        console.print(o)
+
+    h = Table("feed", "enabled", "detail", title="feed health")
+    for row in rep.feeds:
+        detail = ""
+        if row["feed"] == "massive":
+            detail = (f"key={row.get('key_present')} breaker={row.get('breaker')} "
+                      f"throttle_wait={row.get('throttle_wait_s')}s")
+        h.add_row(row["feed"], str(row["enabled"]), detail)
+    console.print(h)
+
+
+@app.command()
+def backup(
+    retain: int = typer.Option(14, help="How many daily backups to keep"),
+    config: str = typer.Option(None, help="Path to config.yaml"),
+):
+    """Copy data/meridian.duckdb to data/backups/meridian-YYYYMMDD.duckdb (retain N)."""
+    from .schedule.jobs import backup_db
+
+    cfg = Config.load(config)
+    dest = backup_db(cfg, retain=retain)
+    if dest:
+        console.print(f"[green]✓ backup[/green] {dest}")
+    else:
+        console.print("[yellow]No DB to back up.[/yellow]")
+
+
+@app.command()
+def relearn(config: str = typer.Option(None, help="Path to config.yaml")):
+    """Weekly self-improvement: refresh outcomes + calibration over all history; report gates."""
+    from .predict.relearn import relearn as run_relearn
+
+    cfg = Config.load(config)
+    if not cfg.duckdb_path.exists():
+        console.print("[red]DB not found.[/red]")
+        raise typer.Exit(1)
+    rep = run_relearn(cfg)
+    console.print(f"[bold]Relearn[/bold] {rep.start or '—'} → {rep.end or '—'}")
+    console.print(f"  outcomes: {rep.outcomes_before} → [green]{rep.outcomes_after}[/green]")
+    console.print(f"  calibrated patterns: {rep.calibrated_patterns or '—'}")
+    if rep.gates_opened:
+        console.print(f"  [green]gates opened:[/green] {rep.gates_opened}")
+    for note in rep.notes:
+        console.print(f"  [dim]{note}[/dim]")
 
 
 @app.command()

@@ -88,6 +88,30 @@ def _clamp01(x: float) -> float:
     return max(0.0, min(1.0, x))
 
 
+def grade_equity_flow(con, ev: dict, close_ts, win: int, min_hist: int, insuff: float) -> GradeResult:
+    """Grade FINRA short-volume / dark-pool against the name's OWN trailing baseline
+    (percentile of the level vs its history, dates < close). Higher level => higher
+    abnormality. Thresholds live here in L1, not in the adapter."""
+    et = ev["event_type"]
+    p = ev.get("payload") or {}
+    col = "short_pct" if et == "ShortVolumeSpike" else "off_exchange_share"
+    value = p.get(col)
+    if value is None:
+        return GradeResult(insuff, True, "no_measure", {"reason": f"no_{col}"})
+    trailing = [
+        r[0] for r in con.execute(
+            f"SELECT {col} FROM equity_flow_state WHERE ticker=? AND ts<? AND {col} IS NOT NULL "
+            "ORDER BY ts DESC LIMIT ?", [ev["ticker"], close_ts, win]).fetchall()
+        if r[0] is not None
+    ]
+    components = {col: value, "n_history": len(trailing)}
+    if len(trailing) < min_hist:
+        return GradeResult(insuff, True, "insufficient_history", components)
+    abn = bl.percentile_rank(float(value), trailing)
+    components["level_pctile"] = abn
+    return GradeResult(abn, False, "own_flow_percentile", components)
+
+
 def grade_discrete(con, ev: dict, target_date: dt.date, win: int, priors: dict) -> GradeResult:
     """Abnormality from the rarity of this (ticker, family) in the trailing window.
 

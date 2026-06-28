@@ -113,6 +113,14 @@ CREATE TABLE IF NOT EXISTS filing_events (
     event_id VARCHAR PRIMARY KEY, event_time TIMESTAMP, ticker VARCHAR,
     form_type VARCHAR, accession VARCHAR, url VARCHAR
 );
+-- equity-flow state (Part B): FINRA short-volume + dark-pool, the L1 baseline source
+CREATE TABLE IF NOT EXISTS equity_flow_state (
+    ticker VARCHAR, ts TIMESTAMP,
+    short_pct DOUBLE,             -- ShortVolume / TotalVolume (Reg SHO daily)
+    off_exchange_share DOUBLE,    -- weekly ATS (dark-pool) share volume
+    data_source VARCHAR
+);
+
 CREATE TABLE IF NOT EXISTS gex_surface (
     ticker VARCHAR, ts TIMESTAMP, strike DOUBLE, expiry DATE,
     gamma DOUBLE, open_interest DOUBLE, dealer_gamma DOUBLE,

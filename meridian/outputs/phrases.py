@@ -25,6 +25,7 @@ READOUT = {
     "options_led_proxy": "Flow-like expansion with no catalyst — possibly positioning-driven.",
     "sector_sympathy": "Basket / sympathy move; the company-specific signal is weak.",
     "gamma_squeeze": "Mechanical, dealer-hedging driven; headlines demoted to late confirmation.",
+    "dark_pool_accumulation": "Off-exchange / short-volume accumulation alongside the move, no catalyst.",
 }
 _DEFAULT_READOUT = "Best-supported structure given the available evidence."
 

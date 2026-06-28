@@ -38,7 +38,7 @@ def _meridian_cmd() -> list[str]:
 def build_plan(cfg: Config) -> InstallPlan:
     cmd = _meridian_cmd()
     workdir = str(cfg.root)
-    logdir = cfg.root / "data"
+    logdir = cfg.root / "logs"
     if sys.platform == "darwin":
         args = cmd + ["schedule", "--mode", "both"]
         prog = "\n".join(f"    <string>{a}</string>" for a in args)
@@ -77,6 +77,7 @@ def build_plan(cfg: Config) -> InstallPlan:
 
 def install_daily(cfg: Config, activate: bool = False) -> InstallPlan:
     plan = build_plan(cfg)
+    (cfg.root / "logs").mkdir(parents=True, exist_ok=True)
     (cfg.root / "data").mkdir(parents=True, exist_ok=True)
     if plan.path is not None:
         plan.path.parent.mkdir(parents=True, exist_ok=True)

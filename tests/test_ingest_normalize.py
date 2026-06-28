@@ -11,7 +11,6 @@ from meridian.adapters.base import RawEvent
 from meridian.adapters.yfinance import YFinanceAdapter
 from meridian.adapters.fred import FredAdapter
 from meridian.adapters.edgar import EdgarAdapter
-from meridian.adapters.news import NewsRssAdapter
 from meridian.adapters.earnings import EarningsAdapter
 
 
@@ -57,21 +56,6 @@ def test_edgar_normalize_golden(sample_ctx):
                   "url": "https://www.sec.gov/Archives/edgar/data/2488/000000248826000050.txt"}),
     ]
     golden("edgar_normalize", _norm(a, raws, sample_ctx))
-
-
-def test_news_normalize_golden(sample_ctx):
-    a = NewsRssAdapter()
-    raws = [
-        RawEvent("news_rss", NOW, None,
-                 {"title": "NVDA and Apple rally as AMD chips gain share",
-                  "link": "https://example.com/a", "feed": "wsj",
-                  "published_iso": "2026-06-26T14:05:00+00:00"}),
-        RawEvent("news_rss", NOW, None,
-                 {"title": "Fed holds rates steady amid soft inflation",
-                  "link": "https://example.com/b", "feed": "cnbc",
-                  "published_iso": "2026-06-26T18:30:00+00:00"}),
-    ]
-    golden("news_normalize", _norm(a, raws, sample_ctx))
 
 
 def test_earnings_normalize_golden(sample_ctx):

@@ -10,7 +10,7 @@ import datetime as dt
 
 from ..config import Config
 from ..ingest.clock import MARKET_OPEN_LOCAL, MARKET_CLOSE_LOCAL, MARKET_TZ
-from .jobs import default_postclose_et, default_premarket_et, run_postclose
+from .jobs import backup_db, default_postclose_et, default_premarket_et, run_postclose
 
 
 def _today_et() -> dt.date:
@@ -55,23 +55,36 @@ def build_scheduler(cfg: Config, mode: str = "postclose"):
     from apscheduler.triggers.cron import CronTrigger
     from apscheduler.triggers.interval import IntervalTrigger
 
-    sched = BlockingScheduler(timezone=str(MARKET_TZ))
+    sched = BlockingScheduler(timezone=str(MARKET_TZ),
+                              job_defaults={"coalesce": True, "max_instances": 1})  # overlap-skip
 
-    def batch_job():
+    def premarket_job():
         d = _today_et()
         run_postclose(cfg, d)
         emit_alerts(cfg, d)
 
+    def postclose_job():
+        d = _today_et()
+        run_postclose(cfg, d)        # ingest -> ... -> explanations -> label
+        emit_alerts(cfg, d)
+        backup_db(cfg)               # end-of-day backup
+
     def intraday_job():
         if not _in_market_hours():
             return
-        d = _today_et()
-        run_postclose(cfg, d)  # same engine; trigger differs (ROADMAP §5)
-        emit_alerts(cfg, d)
+        # Free tier: live bars carried by yfinance (Massive intraday only on a paid plan).
+        from ..state.intraday import run_intraday
+
+        run_intraday(cfg, _today_et())
+
+    def relearn_job():
+        from ..predict.relearn import relearn
+
+        relearn(cfg)
 
     if mode in ("premarket", "both"):
         hh, mm = default_premarket_et(cfg).split(":")
-        sched.add_job(batch_job, CronTrigger(day_of_week="mon-fri", hour=int(hh), minute=int(mm)),
+        sched.add_job(premarket_job, CronTrigger(day_of_week="mon-fri", hour=int(hh), minute=int(mm)),
                       id="premarket", name="Pre-market scan")
     if mode in ("intraday", "both"):
         poll = int((cfg.raw.get("run_modes", {}).get("intraday", {}) or {}).get("poll_seconds", 300))
@@ -79,6 +92,9 @@ def build_scheduler(cfg: Config, mode: str = "postclose"):
                       id="intraday", name=f"Intraday loop ({poll}s)")
     if mode in ("postclose", "both"):
         hh, mm = default_postclose_et(cfg).split(":")
-        sched.add_job(batch_job, CronTrigger(day_of_week="mon-fri", hour=int(hh), minute=int(mm)),
-                      id="postclose", name="EOD postmortem")
+        sched.add_job(postclose_job, CronTrigger(day_of_week="mon-fri", hour=int(hh), minute=int(mm)),
+                      id="postclose", name="EOD postmortem + backup")
+    if mode == "both":
+        sched.add_job(relearn_job, CronTrigger(day_of_week="sun", hour=7, minute=0),
+                      id="relearn", name="Weekly relearn")
     return sched

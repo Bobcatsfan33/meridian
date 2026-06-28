@@ -25,6 +25,9 @@ INVALIDATIONS = {
                          "follow-through, or the headline proves unrelated to the move.",
     "gamma_squeeze": "Read weakens if IV bleeds while spot holds, dealer gamma normalizes "
                      "(flip clears), or the move loses VWAP as hedging flow fades.",
+    "dark_pool_accumulation": "Read weakens if off-exchange / short-volume share normalizes, "
+                              "a company catalyst (news/filing) emerges, or the move reverses "
+                              "without further accumulation.",
 }
 _DEFAULT_INVALIDATION = "Read weakens if the supporting evidence reverses or a stronger catalyst emerges."
 
@@ -51,6 +54,14 @@ def driver_inputs(pattern_id: str, bindings: dict[str, MatchEvent | None], ticke
             out.append(DriverInput("Abnormal price move", p.abnormality))
         if n:
             out.append(DriverInput("Late headline confirmation", n.abnormality))
+    elif pattern_id == "dark_pool_accumulation":
+        s, d = bindings.get("S"), bindings.get("D")
+        if s:
+            out.append(DriverInput("Abnormal short-volume share", s.abnormality))
+        if d:
+            out.append(DriverInput("Dark-pool accumulation", d.abnormality))
+        if p:
+            out.append(DriverInput("Abnormal price move", p.abnormality))
     elif pattern_id == "gamma_squeeze":
         g, k, v = bindings.get("G"), bindings.get("K"), bindings.get("V")
         if g:
