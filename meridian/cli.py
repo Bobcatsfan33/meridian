@@ -129,6 +129,23 @@ def _fmt(x: float) -> str:
     return f"{x:.0f}s"
 
 
+@app.command(name="ingest-intraday")
+def ingest_intraday(
+    date: str = typer.Option(..., help="Trade date, YYYY-MM-DD"),
+    interval: str = typer.Option(None, help="Bar interval (default from config, e.g. 5m)"),
+    ticker: list[str] = typer.Option(None, "--ticker", "-t", help="Symbols (repeatable)"),
+    config: str = typer.Option(None, help="Path to config.yaml"),
+):
+    """Ingest intraday bars into ticker_state_1m (ts = bar close UTC). Daily ingest unchanged."""
+    from .state.intraday import run_intraday
+
+    cfg = Config.load(config)
+    target = _require_date(cfg, date)
+    res = run_intraday(cfg, target, interval=interval, symbols=ticker or None)
+    console.print(f"[bold]Intraday {res.target_date}[/bold]  interval={res.interval}  "
+                  f"symbols={res.n_symbols}  ticker_state_rows=[green]{res.n_rows}[/green]")
+
+
 @app.command()
 def featurize(
     date: str = typer.Option(..., help="Trade date to featurize, YYYY-MM-DD"),

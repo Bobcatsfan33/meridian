@@ -19,6 +19,7 @@ adapters:
   yfinance:                       # price/volume for stocks + ETFs + index/macro
     enabled: false
     priority: 1
+    intraday_interval: "5m"       # intraday bar interval for the intraday loop (Step A2)
   fred:                           # macro: yields, rates, VIX, dollar (keyless CSV)
     enabled: false
     priority: 1
