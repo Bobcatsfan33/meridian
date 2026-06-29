@@ -61,6 +61,10 @@ meridian postmortem --date YYYY-MM-DD
 - **Calibration** — are the reliability curves sensible on your data? (`meridian calibrate`.)
 - **Determinism** — same input → byte-identical cards (golden tests).
 - **Usefulness** — are the readouts, drivers, and invalidation lines actually informative?
+- **Honesty on quiet names** — search a name that *didn't* fire (e.g. a flat-day large cap).
+  You should get an explicit **"No supported explanation — moved in line with expectations"**
+  card: tier **Unknown**, unexplained residual ~**100%**, no invented pattern. Meridian never
+  fabricates a story for a quiet name — that consistency is a feature, not a gap.
 
 When you're done, fill in [`FEEDBACK_TEMPLATE.md`](FEEDBACK_TEMPLATE.md).
 
