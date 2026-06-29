@@ -182,6 +182,7 @@ def build_evidence(
         "move_class_reason": move_class.reason,
         "data_source": data_source,
         "proxy_data": proxy_options,
+        "ad_hoc": False,
         "timeline": _timeline(list(bindings.values()) + catalysts, move_class.demote_news),
         "invalidation": inval,
         "not_investment_advice": True,

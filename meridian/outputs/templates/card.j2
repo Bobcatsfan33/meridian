@@ -1,11 +1,20 @@
 {% if ev.proxy_data %}
 ⚠ PROXY DATA — synthetic option chain, NOT tradeable (use a live options source).
 {% endif %}
+{% if ev.ad_hoc %}
+◆ Ad-hoc — not part of the tracked universe.
+{% endif %}
 {{ ev.ticker }}  {{ ev.move_pct | spct }}   {{ ev.window_start }} → {{ ev.window_end }}
+{% if ev.pattern.id == 'none' %}
+{{ ev.tier_phrase }}: {{ ev.pattern.description }}
+Confidence: {{ ev.confidence.tier }}   Mechanism: {{ ev.move_class }}
+Readout: {{ ev.readout }}
+{% else %}
 {{ ev.tier_phrase }}: this {{ ev.tier_verb }} a {{ ev.pattern.id }} ({{ ev.pattern.description }})
 Confidence: {{ ev.confidence.tier }} ({{ ev.confidence.value | pct }})   Completeness: {{ ev.pattern.completeness | pct }}   Mechanism: {{ ev.move_class }}
 Readout: {{ ev.readout }}
 Forward odds: (predictive engine — see `meridian backtest --pattern {{ ev.pattern.id }}`)
+{% endif %}
 Regime: {{ ev.regime_tags | join(', ') if ev.regime_tags else '—' }}
 
 Evidence (partial order, not arrival order):
