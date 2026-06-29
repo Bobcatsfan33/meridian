@@ -44,6 +44,10 @@ def create_app(cfg: Config | None = None):
 
     @app.get("/api/scanner")
     def scanner(date: str):
+        """Ranked board + a pinned Watchlist group on top. Watchlist names are ALWAYS
+        carded (graceful read if they didn't fire) and excluded from the ranked list."""
+        from ..outputs.build import card_for_ticker
+
         d = _parse(date)
         con = _con()
         try:
@@ -52,24 +56,12 @@ def create_app(cfg: Config | None = None):
                 [d]).fetchall()
         finally:
             con.close()
-        out = []
-        for (blob,) in rows:
-            ev = json.loads(blob)
-            out.append({
-                "ticker": ev["ticker"],
-                "move_pct": ev.get("move_pct"),
-                "pattern": ev["pattern"]["id"],
-                "tier": ev["confidence"]["tier"],
-                "confidence": ev["confidence"]["value"],
-                "residual": ev["unexplained_residual"],
-                "residual_basis": ev.get("residual_basis"),
-                "data_source": ev.get("data_source"),
-                "proxy_data": ev.get("proxy_data", False),
-                "move_class": ev.get("move_class"),
-                "initiating": ev["timeline"][0]["label"] if ev.get("timeline") else None,
-            })
-        out.sort(key=lambda r: r["confidence"], reverse=True)
-        return JSONResponse(out)
+        pinned = set(cfg.watchlist)
+        ranked = [_scanner_row(json.loads(b)) for (b,) in rows]
+        ranked = [r for r in ranked if r["ticker"] not in pinned]
+        ranked.sort(key=lambda r: r["confidence"], reverse=True)
+        watch = [_scanner_row(card_for_ticker(cfg, t, d)) for t in cfg.watchlist]
+        return JSONResponse({"watchlist": watch, "ranked": ranked})
 
     @app.get("/api/card")
     def card_json(ticker: str, date: str):
@@ -136,6 +128,23 @@ def create_app(cfg: Config | None = None):
         return {"ok": cfg.duckdb_path.exists(), "db": str(cfg.duckdb_path)}
 
     return app
+
+
+def _scanner_row(ev: dict) -> dict:
+    """One scanner row from an evidence object (a stored card or a graceful read)."""
+    return {
+        "ticker": ev["ticker"],
+        "move_pct": ev.get("move_pct"),
+        "pattern": ev["pattern"]["id"],
+        "tier": ev["confidence"]["tier"],
+        "confidence": ev["confidence"]["value"],
+        "residual": ev["unexplained_residual"],
+        "residual_basis": ev.get("residual_basis"),
+        "data_source": ev.get("data_source"),
+        "proxy_data": ev.get("proxy_data", False),
+        "move_class": ev.get("move_class"),
+        "initiating": ev["timeline"][0]["label"] if ev.get("timeline") else None,
+    }
 
 
 def _parse(date: str) -> dt.date:

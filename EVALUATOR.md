@@ -35,6 +35,15 @@ meridian serve                   # open http://127.0.0.1:8765/ to view the cards
 `meridian demo` ingests a tiny fixture set, featurizes, matches, builds explanations + a
 postmortem, and prints a summary — with no network and no API keys.
 
+## Search, drill-down, and a pinned watchlist
+- **Search any ticker** in the dashboard header (Enter) to render its card for the selected date.
+- **Quiet name** → an honest "no supported explanation" card (not a fabricated story).
+- **Out-of-universe name** (e.g. TSM) → an "Analyze ad-hoc" button runs a scoped single-name
+  pipeline on demand (`meridian analyze --ticker TSM --date YYYY-MM-DD` from the CLI).
+- **Watchlist**: pin names to the top of the scanner by editing `watchlist:` in `config/config.yaml`
+  (uppercase tickers, e.g. `watchlist: [NVDA, AMD, AAPL]`) and refreshing. Pinned names are always
+  carded for the date — a graceful read if they didn't fire — above the ranked list.
+
 ## Bring your own data
 You can evaluate Meridian on **your** historical events. Two supported routes:
 1. **CSV** — map your history to the documented CSV schema and use the worked example adapter

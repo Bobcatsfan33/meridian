@@ -12,6 +12,12 @@ universe:
   file: config/universe.csv
   index_etfs: config/index_etfs.csv
 
+# Watchlist: names pinned to the top of the dashboard scanner. They always get a card
+# built for the date (a graceful "no supported explanation" read if they didn't fire),
+# regardless of confidence rank. Edit this list (uppercase tickers) and refresh the
+# dashboard. Example: watchlist: [NVDA, AMD, AAPL]
+watchlist: []
+
 # Data adapters: free first, Robinhood MCP second, paid only where flagged.
 # Adapters SHIP DISABLED. Enable per-adapter here, or override per-run with the
 # CLI flag: `meridian ingest --date D -a yfinance -a fred -a edgar -a news_rss -a earnings`.
