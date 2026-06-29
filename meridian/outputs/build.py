@@ -17,9 +17,80 @@ from ..engine.structural import MatchEvent
 from ..ingest.clock import market_close_utc
 from ..state import baseline as bl
 from ..storage import connect
+from . import phrases
 from .explain import build_evidence
 
 _RESIDUAL_TOL = 1e-6
+
+
+def card_for_ticker(cfg: Config, ticker: str, target_date: dt.date) -> dict[str, Any]:
+    """Resolve one name+date to a structured evidence object (the same shape the scanner
+    cards use). Never empty, never fabricated:
+      (a) a stored move_explanations row -> return it verbatim (no re-scoring);
+      (b) a universe name with no firing  -> a graceful 'no supported explanation' read;
+      (c) anything else                   -> an 'ad-hoc / not tracked' graceful read.
+    """
+    ticker = (ticker or "").strip().upper()
+    con = connect(cfg.duckdb_path)
+    try:
+        row = con.execute(
+            "SELECT evidence_object FROM move_explanations WHERE ticker=? AND "
+            "CAST(window_start AS DATE)=?", [ticker, target_date]).fetchone()
+        if row and row[0]:
+            return json.loads(row[0])  # (a) same object the scanner row uses
+        in_universe = con.execute("SELECT 1 FROM universe WHERE symbol=?", [ticker]).fetchone() is not None
+        return _graceful_card(con, ticker, target_date, in_universe=in_universe)
+    finally:
+        con.close()
+
+
+def _graceful_card(con, ticker: str, target_date: dt.date, in_universe: bool,
+                   ad_hoc: bool = False) -> dict[str, Any]:
+    """An honest 'no supported explanation' evidence object built from existing state —
+    NEVER invents a pattern. tier=Unknown, residual ~100%. Renders like any other card."""
+    close = market_close_utc(target_date).replace(tzinfo=None)
+    move = _scalar(con, "SELECT ret_1m FROM ticker_state_1m WHERE ticker=? AND ts=?", [ticker, close])
+    abnormal = _scalar(con, "SELECT abnormal_ret FROM expected_behavior_1m WHERE ticker=? AND ts=?",
+                       [ticker, close])
+    reg = con.execute("SELECT regime_tags FROM regimes_daily WHERE trade_date=?", [target_date]).fetchone()
+    regime_tags = list(reg[0]) if reg and reg[0] else []
+
+    if not in_universe and not ad_hoc:
+        desc = "Not part of the tracked universe."
+        readout = "Not tracked — no data for this name on this date."
+    else:
+        desc = "No supported explanation"
+        readout = "No supported explanation — moved in line with expectations."
+    return {
+        "ticker": ticker,
+        "window_start": str(dt.datetime.combine(target_date, dt.time())),
+        "window_end": str(dt.datetime.combine(target_date, dt.time(23, 59, 59))),
+        "pattern": {"id": "none", "version": "0", "description": desc, "completeness": 0.0},
+        "move_pct": move,
+        "abnormal_move_pct": abnormal,
+        "confidence": {"value": 0.0, "tier": "Unknown"},
+        "tier_phrase": phrases.tier_phrase("Unknown"),
+        "tier_verb": phrases.tier_verb("Unknown"),
+        "readout": readout,
+        "drivers": [],                       # nothing attributable -> residual is ~100%
+        "unexplained_residual": 1.0,
+        "residual_basis": "structural",
+        "constraints_applied": ["No firing pattern for this name on this date."],
+        "regime_tags": regime_tags,
+        "move_class": "none",
+        "data_source": "ad_hoc" if ad_hoc else ("universe" if in_universe else "n/a"),
+        "proxy_data": False,
+        "ad_hoc": ad_hoc,
+        "timeline": [],
+        "invalidation": "A read would emerge if an abnormal driver (news, flow, filing, or "
+                        "dealer positioning) appears, or the move diverges from its expected behavior.",
+        "not_investment_advice": True,
+    }
+
+
+def _scalar(con, sql: str, params: list):
+    row = con.execute(sql, params).fetchone()
+    return row[0] if row and row[0] is not None else None
 
 
 def build_explanations(cfg: Config, target_date: dt.date,

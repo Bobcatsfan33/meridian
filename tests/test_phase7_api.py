@@ -51,9 +51,11 @@ def test_dates_and_scanner(tmp_db):
     c = _client(tmp_db)
     assert c.get("/api/health").json()["ok"] is True
     assert TARGET.isoformat() in c.get("/api/dates").json()
-    rows = c.get(f"/api/scanner?date={TARGET}").json()
+    data = c.get(f"/api/scanner?date={TARGET}").json()
+    rows = data["ranked"]              # scanner now returns {watchlist, ranked}
     assert rows and rows[0]["ticker"] == "AAPL"
     assert "residual" in rows[0] and "tier" in rows[0]
+    assert data["watchlist"] == []     # no watchlist configured in this test
 
 
 def test_card_and_postmortem_endpoints(tmp_db):

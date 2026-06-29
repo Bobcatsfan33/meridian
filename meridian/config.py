@@ -64,3 +64,15 @@ class Config:
     @property
     def predict(self) -> dict[str, Any]:
         return self.raw.get("predict", {}) or {}
+
+    @property
+    def watchlist(self) -> list[str]:
+        """Pinned names (config.yaml: watchlist: [NVDA, AMD]) — always carded, shown on top."""
+        wl = self.raw.get("watchlist") or []
+        seen, out = set(), []
+        for s in wl:
+            t = str(s).strip().upper()
+            if t and t not in seen:
+                seen.add(t)
+                out.append(t)
+        return out

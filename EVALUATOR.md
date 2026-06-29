@@ -35,6 +35,15 @@ meridian serve                   # open http://127.0.0.1:8765/ to view the cards
 `meridian demo` ingests a tiny fixture set, featurizes, matches, builds explanations + a
 postmortem, and prints a summary — with no network and no API keys.
 
+## Search, drill-down, and a pinned watchlist
+- **Search any ticker** in the dashboard header (Enter) to render its card for the selected date.
+- **Quiet name** → an honest "no supported explanation" card (not a fabricated story).
+- **Out-of-universe name** (e.g. TSM) → an "Analyze ad-hoc" button runs a scoped single-name
+  pipeline on demand (`meridian analyze --ticker TSM --date YYYY-MM-DD` from the CLI).
+- **Watchlist**: pin names to the top of the scanner by editing `watchlist:` in `config/config.yaml`
+  (uppercase tickers, e.g. `watchlist: [NVDA, AMD, AAPL]`) and refreshing. Pinned names are always
+  carded for the date — a graceful read if they didn't fire — above the ranked list.
+
 ## Bring your own data
 You can evaluate Meridian on **your** historical events. Two supported routes:
 1. **CSV** — map your history to the documented CSV schema and use the worked example adapter
@@ -61,6 +70,10 @@ meridian postmortem --date YYYY-MM-DD
 - **Calibration** — are the reliability curves sensible on your data? (`meridian calibrate`.)
 - **Determinism** — same input → byte-identical cards (golden tests).
 - **Usefulness** — are the readouts, drivers, and invalidation lines actually informative?
+- **Honesty on quiet names** — search a name that *didn't* fire (e.g. a flat-day large cap).
+  You should get an explicit **"No supported explanation — moved in line with expectations"**
+  card: tier **Unknown**, unexplained residual ~**100%**, no invented pattern. Meridian never
+  fabricates a story for a quiet name — that consistency is a feature, not a gap.
 
 When you're done, fill in [`FEEDBACK_TEMPLATE.md`](FEEDBACK_TEMPLATE.md).
 

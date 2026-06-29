@@ -11,3 +11,7 @@ data/*.log
 # DB backups (regenerable, never commit)
 data/backups/
 data/**/*.duckdb
+
+# ad-hoc analysis scratch + cache (regenerable)
+data/adhoc/
+data/adhoc_cache/

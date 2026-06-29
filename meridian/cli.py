@@ -709,6 +709,23 @@ def install_daily(
 
 
 @app.command()
+def analyze(
+    ticker: str = typer.Option(..., help="Ticker to analyze ad-hoc (need not be in the universe)"),
+    date: str = typer.Option(..., help="Trade date, YYYY-MM-DD"),
+    refresh: bool = typer.Option(False, help="Ignore cache and re-run"),
+    config: str = typer.Option(None, help="Path to config.yaml"),
+):
+    """Ad-hoc single-name analysis for a ticker not in the tracked universe (fail-safe, cached)."""
+    from .analyze import analyze as run_analyze
+    from .outputs.render import render_card
+
+    cfg = Config.load(config)
+    target = _require_date(cfg, date)
+    ev = run_analyze(cfg, ticker, target, refresh=refresh)
+    console.print(render_card(ev))
+
+
+@app.command()
 def demo(
     db: str = typer.Option(None, help="Sample DB path (default: data/demo.duckdb)"),
 ):
