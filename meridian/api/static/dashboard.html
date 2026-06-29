@@ -6,24 +6,30 @@
 <title>Meridian — local market event engine</title>
 <style>
   :root { --bg:#0e1116; --panel:#171c24; --line:#2a313c; --fg:#d7dde6; --dim:#8b95a3;
-          --hi:#4cc38a; --med:#d8a657; --low:#7daea3; --red:#e06c75; }
+          --hi:#4cc38a; --med:#d8a657; --low:#7daea3; --red:#e06c75; --pin:#5aa9e6; }
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; }
-  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
   h1 { font-size:16px; margin:0; letter-spacing:1px; }
   .dim { color:var(--dim); }
-  select, button { background:var(--panel); color:var(--fg); border:1px solid var(--line);
-                   border-radius:6px; padding:5px 9px; font:inherit; }
+  select, button, input { background:var(--panel); color:var(--fg); border:1px solid var(--line);
+                          border-radius:6px; padding:5px 9px; font:inherit; }
+  input::placeholder { color:var(--dim); }
   main { display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; padding:16px; }
   .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
   .panel h2 { font-size:12px; text-transform:uppercase; letter-spacing:1px; color:var(--dim);
-              margin:0; padding:10px 14px; border-bottom:1px solid var(--line); }
+              margin:0; padding:8px 14px; border-bottom:1px solid var(--line);
+              display:flex; align-items:center; gap:10px; }
+  .panel h2 input { text-transform:none; letter-spacing:0; padding:3px 8px; }
   table { width:100%; border-collapse:collapse; }
   th,td { text-align:left; padding:6px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
   th { color:var(--dim); font-weight:600; }
   tr:hover td { background:#1d242e; cursor:pointer; }
   .High{color:var(--hi)} .Medium{color:var(--med)} .Low{color:var(--low)} .Unknown{color:var(--dim)}
   .up{color:var(--hi)} .down{color:var(--red)}
+  tr.pin td { background:#141d27; }
+  tr.pin td:first-child::before { content:"★ "; color:var(--pin); }
+  .grouphdr td { color:var(--pin); font-weight:600; background:#11161d; text-transform:uppercase; letter-spacing:1px; font-size:11px; }
   #scannerWrap { max-height:72vh; overflow:auto; }
   pre { margin:0; padding:14px; white-space:pre-wrap; word-break:break-word; max-height:46vh; overflow:auto; }
   .full { grid-column:1 / -1; }
@@ -35,18 +41,20 @@
   <h1>◵ MERIDIAN</h1>
   <span class="dim">local market event-correlation engine</span>
   <span style="flex:1"></span>
+  <input id="search" placeholder="search ticker… (Enter)" size="18" autocomplete="off"/>
   <label class="dim">date <select id="date"></select></label>
   <button id="refresh">refresh</button>
   <span class="dim">not investment advice</span>
 </header>
 <main>
   <section class="panel">
-    <h2>Pattern scanner — ranked by confidence</h2>
+    <h2><span>Pattern scanner</span><span style="flex:1"></span>
+        <input id="filter" placeholder="filter rows…" size="12" autocomplete="off"/></h2>
     <div id="scannerWrap"><div class="note">loading…</div></div>
   </section>
   <section class="panel">
-    <h2>Card — <span id="cardTicker" class="dim">select a row</span></h2>
-    <pre id="card" class="dim">Click a scanner row to render its deterministic card.</pre>
+    <h2>Card — <span id="cardTicker" class="dim">search a ticker or click a row</span></h2>
+    <pre id="card" class="dim">Type a ticker and press Enter, or click a scanner row, to render its deterministic card.</pre>
   </section>
   <section class="panel full">
     <h2>EOD postmortem</h2>
@@ -70,34 +78,62 @@ async function loadDates(){
   return dates.length>0;
 }
 
-async function loadScanner(){
-  const rows = await j("/api/scanner?date="+DATE);
-  let h = "<table><thead><tr><th>ticker</th><th>move</th><th>pattern</th><th>conf</th><th>resid</th><th>mechanism</th></tr></thead><tbody>";
-  for(const r of rows){
-    h += `<tr data-t="${r.ticker}">
+function rowHtml(r){
+  return `<tr data-t="${r.ticker}" class="${r.pinned?'pin':''}">
       <td>${r.ticker}</td>
       <td class="${(r.move_pct||0)>=0?'up':'down'}">${spct(r.move_pct)}</td>
       <td>${r.pattern}</td>
       <td class="${r.tier}">${r.tier} ${pct(r.confidence)}</td>
       <td>${pct(r.residual)}</td>
       <td class="dim">${r.move_class||"—"}</td></tr>`;
+}
+
+async function loadScanner(){
+  const data = await j("/api/scanner?date="+DATE);
+  const watchlist = (data.watchlist || []), ranked = (data.ranked || data);
+  let h = "<table><thead><tr><th>ticker</th><th>move</th><th>pattern</th><th>conf</th><th>resid</th><th>mechanism</th></tr></thead><tbody>";
+  if(watchlist.length){
+    h += '<tr class="grouphdr"><td colspan="6">Watchlist (pinned)</td></tr>';
+    for(const r of watchlist){ r.pinned = true; h += rowHtml(r); }
+    h += '<tr class="grouphdr"><td colspan="6">Ranked by confidence</td></tr>';
   }
+  for(const r of ranked){ h += rowHtml(r); }
   h += "</tbody></table>";
-  $("#scannerWrap").innerHTML = rows.length ? h : '<div class="note">No explanations. Run: meridian postmortem --date '+DATE+'</div>';
+  const any = watchlist.length || ranked.length;
+  $("#scannerWrap").innerHTML = any ? h : '<div class="note">No explanations. Run: meridian postmortem --date '+DATE+'</div>';
   document.querySelectorAll("#scannerWrap tr[data-t]").forEach(tr =>
     tr.onclick = () => loadCard(tr.getAttribute("data-t")));
+  filterRows($("#filter").value);
+}
+
+function filterRows(q){
+  q = (q||"").trim().toUpperCase();
+  document.querySelectorAll("#scannerWrap tr[data-t]").forEach(tr=>{
+    tr.style.display = (!q || tr.getAttribute("data-t").toUpperCase().includes(q)) ? "" : "none";
+  });
 }
 
 async function loadCard(ticker){
+  ticker = (ticker||"").trim().toUpperCase();
+  if(!ticker){ $("#cardTicker").textContent="—"; $("#cardTicker").className="dim";
+               $("#card").textContent="Type a ticker and press Enter."; return; }
   $("#cardTicker").textContent = ticker; $("#cardTicker").className = "";
   $("#card").className = ""; $("#card").textContent = "loading…";
-  $("#card").textContent = await t(`/api/card/${ticker}?date=${DATE}`);
+  try {
+    const r = await fetch(`/api/card?ticker=${encodeURIComponent(ticker)}&date=${DATE}`);
+    if(!r.ok){ $("#card").textContent = "No card for "+ticker+" on "+DATE+" ("+r.status+")."; return; }
+    const body = await r.json();
+    $("#card").textContent = body.rendered;
+  } catch(e){ $("#card").textContent = String(e.message || e); }
 }
+
 async function loadPostmortem(){ $("#postmortem").textContent = await t(`/api/postmortem/${DATE}`); $("#postmortem").className=""; }
 
 async function refresh(){ await loadScanner(); await loadPostmortem(); }
 $("#date").onchange = e => { DATE = e.target.value; refresh(); };
 $("#refresh").onclick = refresh;
+$("#search").onkeydown = e => { if(e.key === "Enter"){ loadCard(e.target.value); } };
+$("#filter").oninput = e => filterRows(e.target.value);
 
 (async () => {
   try {
