@@ -55,6 +55,7 @@
   <section class="panel">
     <h2>Card — <span id="cardTicker" class="dim">search a ticker or click a row</span></h2>
     <pre id="card" class="dim">Type a ticker and press Enter, or click a scanner row, to render its deterministic card.</pre>
+    <div id="adhocWrap" class="note" style="display:none"><button id="adhocBtn"></button></div>
   </section>
   <section class="panel full">
     <h2>EOD postmortem</h2>
@@ -121,9 +122,29 @@ async function loadCard(ticker){
   $("#card").className = ""; $("#card").textContent = "loading…";
   try {
     const r = await fetch(`/api/card?ticker=${encodeURIComponent(ticker)}&date=${DATE}`);
-    if(!r.ok){ $("#card").textContent = "No card for "+ticker+" on "+DATE+" ("+r.status+")."; return; }
+    if(!r.ok){ $("#card").textContent = "No card for "+ticker+" on "+DATE+" ("+r.status+")."; $("#adhocWrap").style.display="none"; return; }
     const body = await r.json();
     $("#card").textContent = body.rendered;
+    maybeAdhoc(body.evidence, ticker);
+  } catch(e){ $("#card").textContent = String(e.message || e); }
+}
+
+function maybeAdhoc(ev, ticker){
+  const w = $("#adhocWrap"), b = $("#adhocBtn");
+  if(ev && ev.data_source === "n/a"){          // out-of-universe, not tracked -> offer ad-hoc
+    b.textContent = "Analyze " + ticker + " ad-hoc (fetches live data, one-time)";
+    b.onclick = () => analyzeAdhoc(ticker);
+    w.style.display = "";
+  } else { w.style.display = "none"; }
+}
+
+async function analyzeAdhoc(ticker){
+  $("#adhocWrap").style.display = "none";
+  $("#card").textContent = "running ad-hoc analysis for " + ticker + "… (one-time, then cached)";
+  try {
+    const r = await fetch(`/api/analyze?ticker=${encodeURIComponent(ticker)}&date=${DATE}`);
+    if(!r.ok){ $("#card").textContent = "Ad-hoc analysis failed for "+ticker+" ("+r.status+")."; return; }
+    $("#card").textContent = (await r.json()).rendered;
   } catch(e){ $("#card").textContent = String(e.message || e); }
 }
 

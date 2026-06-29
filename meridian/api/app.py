@@ -84,6 +84,19 @@ def create_app(cfg: Config | None = None):
         ev = card_for_ticker(cfg, ticker, d)
         return JSONResponse({"evidence": ev, "rendered": render_card(ev)})
 
+    @app.get("/api/analyze")
+    def analyze_ep(ticker: str, date: str):
+        """Ad-hoc single-name analysis for an out-of-universe ticker (fail-safe, cached).
+        Network-bearing — invoked explicitly (no fan-out on a typo)."""
+        from ..analyze import analyze as run_analyze
+        from ..outputs.render import render_card
+
+        d = _parse(date)
+        if not (ticker or "").strip():
+            raise HTTPException(400, "ticker is required")
+        ev = run_analyze(cfg, ticker, d)
+        return JSONResponse({"evidence": ev, "rendered": render_card(ev)})
+
     @app.get("/api/card/{ticker}", response_class=PlainTextResponse)
     def card(ticker: str, date: str):
         from ..outputs.render import render_card
