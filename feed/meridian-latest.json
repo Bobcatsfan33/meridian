@@ -1,0 +1,25 @@
+{
+  "source": "meridian",
+  "_status": "SEED — replaced automatically by meridian_sync.py --publish on the Mac's first scheduled run.",
+  "meridian_date": "2026-06-29",
+  "generated_at_utc": "2026-06-29T22:00:00+00:00",
+  "regime": {"regime": "mid_vol_range", "tags": ["mid_vol", "range", "mixed_breadth"], "names_explained": 504},
+  "counts": {"flow_candidates": 86, "gamma_squeeze": 0, "price_before_news": 0, "sympathy_beta": 42},
+  "notes": "EOD attribution of the prior session. Pre-market overlay ONLY; not an intraday trigger. Lower residual = mechanism explains more of the move. Helm still requires its own trigger and obeys RISK LIMITS.",
+  "gamma_squeeze": [],
+  "flow_candidates": [
+    {"ticker": "MU",   "move_pct": -0.082, "move_pct_display": -8.2, "pattern": "options_led_proxy", "tier": "Medium", "residual": 0.30, "in_universe": true},
+    {"ticker": "PLTR", "move_pct":  0.034, "move_pct_display":  3.4, "pattern": "options_led_proxy", "tier": "Medium", "residual": 0.32, "in_universe": true},
+    {"ticker": "NOW",  "move_pct":  0.033, "move_pct_display":  3.3, "pattern": "options_led_proxy", "tier": "Medium", "residual": 0.34, "in_universe": true},
+    {"ticker": "MRVL", "move_pct": -0.051, "move_pct_display": -5.1, "pattern": "options_led_proxy", "tier": "Medium", "residual": 0.34, "in_universe": true}
+  ],
+  "price_before_news": [],
+  "sympathy_beta_deprioritize": [
+    {"ticker": "AMZN",  "move_pct": 0.050, "move_pct_display": 5.0, "pattern": "sector_sympathy", "tier": "Medium", "residual": 0.42, "in_universe": true},
+    {"ticker": "GOOG",  "move_pct": 0.033, "move_pct_display": 3.3, "pattern": "sector_sympathy", "tier": "High",   "residual": 0.35, "in_universe": true},
+    {"ticker": "GOOGL", "move_pct": 0.032, "move_pct_display": 3.2, "pattern": "sector_sympathy", "tier": "Medium", "residual": 0.43, "in_universe": true},
+    {"ticker": "META",  "move_pct": 0.030, "move_pct_display": 3.0, "pattern": "sector_sympathy", "tier": "Medium", "residual": 0.12, "in_universe": true},
+    {"ticker": "TSLA",  "move_pct": 0.030, "move_pct_display": 3.0, "pattern": "sector_sympathy", "tier": "Medium", "residual": 0.35, "in_universe": true},
+    {"ticker": "NFLX",  "move_pct": 0.022, "move_pct_display": 2.2, "pattern": "sector_sympathy", "tier": "Medium", "residual": 0.23, "in_universe": true}
+  ]
+}
