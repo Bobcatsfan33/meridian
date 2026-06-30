@@ -15,7 +15,7 @@ from typing import Any
 
 from .config import Config
 from .ingest.clock import market_close_utc
-from .storage import connect, init_db
+from .storage import connect, db, init_db
 
 _MARKET = "SPY"
 
@@ -77,7 +77,8 @@ def build_adhoc(cfg: Config, ticker: str, target_date: dt.date, price_window: di
     finally:
         con.close()
 
-    featurize(connect(scratch), scfg, target_date)
+    with db(scratch) as fcon:           # fd-safe: featurize() does not own/close its con
+        featurize(fcon, scfg, target_date)
     run_match(scfg, target_date)
     build_explanations(scfg, target_date)
 

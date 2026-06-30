@@ -25,6 +25,28 @@ def interval_minutes(interval: str) -> int:
     return _INTERVAL_MINUTES.get(interval, 5)
 
 
+_YF_CONFIGURED = False
+
+
+def configure_yfinance() -> None:
+    """Pin yfinance's tz cache to a stable location so it isn't reopened/recreated per call
+    (the 'unable to open database file' symptom under fd pressure). Idempotent, best-effort."""
+    global _YF_CONFIGURED
+    if _YF_CONFIGURED:
+        return
+    _YF_CONFIGURED = True
+    try:
+        import pathlib
+
+        import yfinance as yf
+
+        cache = pathlib.Path.home() / ".cache" / "meridian" / "yf_tz"
+        cache.mkdir(parents=True, exist_ok=True)
+        yf.set_tz_cache_location(str(cache))
+    except Exception:
+        pass
+
+
 def _role_to_family(role: str) -> str:
     return "macro" if role == "macro" else "sector_peer"
 
@@ -142,21 +164,32 @@ class YFinanceAdapter(Adapter):
     def download_intraday(self, symbols: list[str], date: dt.date,
                           interval: str = "5m") -> dict[str, list[dict[str, Any]]]:
         """Return {symbol: [bar...]} of intraday bars for `date`. Each bar is
-        {start (tz-aware), open, high, low, close, volume}. Resilient to gaps."""
+        {start (tz-aware), open, high, low, close, volume}. Resilient to gaps.
+
+        fd hygiene (intraday runs every few minutes for the whole session): pin the tz
+        cache, reuse ONE requests.Session for the call, and close it; threads=False so no
+        worker threads leak per-cycle handles."""
+        import requests
         import yfinance as yf
 
+        configure_yfinance()
         end = date + dt.timedelta(days=1)
         out: dict[str, list[dict[str, Any]]] = {}
-        for i in range(0, len(symbols), _CHUNK):
-            chunk = symbols[i : i + _CHUNK]
-            try:
-                df = yf.download(
-                    chunk, start=date.isoformat(), end=end.isoformat(), interval=interval,
-                    auto_adjust=False, progress=False, threads=True, group_by="ticker",
-                )
-            except Exception:
-                continue
-            out.update(self._intraday_extract(df, chunk))
+        session = requests.Session()
+        try:
+            for i in range(0, len(symbols), _CHUNK):
+                chunk = symbols[i : i + _CHUNK]
+                kw = dict(start=date.isoformat(), end=end.isoformat(), interval=interval,
+                          auto_adjust=False, progress=False, threads=False, group_by="ticker")
+                try:
+                    df = yf.download(chunk, session=session, **kw)
+                except TypeError:           # session not supported in this yfinance version
+                    df = yf.download(chunk, **kw)
+                except Exception:
+                    continue
+                out.update(self._intraday_extract(df, chunk))
+        finally:
+            session.close()
         return out
 
     @staticmethod

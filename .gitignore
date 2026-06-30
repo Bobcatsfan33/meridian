@@ -15,3 +15,6 @@ data/**/*.duckdb
 # ad-hoc analysis scratch + cache (regenerable)
 data/adhoc/
 data/adhoc_cache/
+
+# runtime logs (scheduler/serve) — never commit
+logs/

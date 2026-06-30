@@ -1,5 +1,6 @@
 """DuckDB connection + schema application (idempotent)."""
 from __future__ import annotations
+import contextlib
 import csv
 import pathlib
 import duckdb
@@ -10,6 +11,21 @@ SCHEMA = pathlib.Path(__file__).with_name("schema.sql")
 def connect(db_path: pathlib.Path) -> duckdb.DuckDBPyConnection:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     return duckdb.connect(str(db_path))
+
+
+@contextlib.contextmanager
+def db(target):
+    """Context manager that ALWAYS closes the connection (fd-leak safe).
+
+    `with db(cfg) as con:` or `with db(path) as con:`. Accepts a Config (uses its
+    duckdb_path) or a path. Use this for any short-lived connection.
+    """
+    path = getattr(target, "duckdb_path", target)
+    con = connect(path)
+    try:
+        yield con
+    finally:
+        con.close()
 
 
 def apply_schema(con: duckdb.DuckDBPyConnection) -> int:

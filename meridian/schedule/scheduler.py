@@ -17,6 +17,22 @@ def _today_et() -> dt.date:
     return dt.datetime.now(MARKET_TZ).date()
 
 
+def raise_fd_limit(target: int = 8192) -> tuple[int, int]:
+    """Raise the soft open-file limit toward `target` (bounded by the hard cap). macOS ships
+    a 256 soft limit that the long-lived scheduler can exhaust; this gives ample headroom."""
+    try:
+        import resource
+
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        want = target if hard == resource.RLIM_INFINITY else min(hard, target)
+        new_soft = max(soft, want)
+        if new_soft != soft:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (new_soft, hard))
+        return resource.getrlimit(resource.RLIMIT_NOFILE)
+    except Exception:
+        return (-1, -1)
+
+
 def _in_market_hours() -> bool:
     now = dt.datetime.now(MARKET_TZ)
     if now.weekday() >= 5:
@@ -55,6 +71,7 @@ def build_scheduler(cfg: Config, mode: str = "postclose"):
     from apscheduler.triggers.cron import CronTrigger
     from apscheduler.triggers.interval import IntervalTrigger
 
+    raise_fd_limit()   # headroom so the long-lived loop can't exhaust the 256 soft fd limit
     sched = BlockingScheduler(timezone=str(MARKET_TZ),
                               job_defaults={"coalesce": True, "max_instances": 1})  # overlap-skip
 
@@ -73,9 +90,16 @@ def build_scheduler(cfg: Config, mode: str = "postclose"):
         if not _in_market_hours():
             return
         # Free tier: live bars carried by yfinance (Massive intraday only on a paid plan).
-        from ..state.intraday import run_intraday
+        # A single cycle failing must NOT crash-loop the scheduler — catch, log, continue.
+        try:
+            from ..state.intraday import run_intraday
 
-        run_intraday(cfg, _today_et())
+            run_intraday(cfg, _today_et())
+        except Exception as exc:
+            import logging
+
+            logging.getLogger("meridian.scheduler").warning(
+                "intraday cycle failed (continuing): %s", exc)
 
     def relearn_job():
         from ..predict.relearn import relearn

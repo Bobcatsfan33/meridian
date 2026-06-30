@@ -55,6 +55,14 @@ def build_plan(cfg: Config) -> InstallPlan:
   <key>WorkingDirectory</key><string>{workdir}</string>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
+  <key>SoftResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key><integer>8192</integer>
+  </dict>
+  <key>HardResourceLimits</key>
+  <dict>
+    <key>NumberOfFiles</key><integer>8192</integer>
+  </dict>
   <key>StandardOutPath</key><string>{logdir / 'meridian.out.log'}</string>
   <key>StandardErrorPath</key><string>{logdir / 'meridian.err.log'}</string>
 </dict>
