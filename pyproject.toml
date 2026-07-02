@@ -19,8 +19,8 @@ dependencies = [
 [project.optional-dependencies]
 data = ["yfinance", "fredapi", "feedparser", "pandas", "lxml"]
 ml = ["scikit-learn", "statsmodels", "scipy"]
-api = ["fastapi", "uvicorn", "apscheduler"]
-dev = ["pytest", "ruff"]
+api = ["fastapi", "uvicorn", "apscheduler", "httpx>=0.27,<0.28"]
+dev = ["meridian[api,data]", "pytest", "pytest-asyncio", "ruff"]
 
 [project.scripts]
 meridian = "meridian.cli:app"
