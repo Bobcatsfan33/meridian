@@ -140,7 +140,10 @@ def build_evidence(
     data_source: str = "live",
 ) -> dict[str, Any]:
     catalysts = catalysts or []
-    proxy_options = data_source == "fixture"
+    proxy_options = data_source == "fixture"          # synthetic chain -> tier-capped
+    # proxy_data is the honest output flag: fixture chains AND price/volume-only reads
+    # (no options data at all) are both proxies — neither is options-backed "live" data.
+    proxy_data = data_source in ("fixture", "price_volume_proxy")
     move_class = classify(bindings, catalysts)
     drivers_in = driver_inputs(pattern_id, bindings, ticker)
     corroboration = len(drivers_in)
@@ -181,7 +184,7 @@ def build_evidence(
         "move_class": move_class.label,
         "move_class_reason": move_class.reason,
         "data_source": data_source,
-        "proxy_data": proxy_options,
+        "proxy_data": proxy_data,
         "ad_hoc": False,
         "timeline": _timeline(list(bindings.values()) + catalysts, move_class.demote_news),
         "invalidation": inval,

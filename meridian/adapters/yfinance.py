@@ -102,7 +102,11 @@ class YFinanceAdapter(Adapter):
     # --- network ---------------------------------------------------------------
     def _download(self, symbols: list[str], trade_date: dt.date) -> dict[str, dict[str, Any]]:
         """Return {symbol: {open,high,low,close,volume}} for `trade_date`. Resilient
-        to per-symbol gaps and feed errors (returns whatever resolved)."""
+        to per-symbol gaps and feed errors (returns whatever resolved).
+
+        auto_adjust=True: bars are split/dividend-adjusted. Unadjusted closes turn
+        splits/spinoffs into fabricated 'abnormal moves' (e.g. a 1:2 split reads as
+        -50%), which poisons every downstream return."""
         import yfinance as yf
 
         start = trade_date
@@ -115,7 +119,7 @@ class YFinanceAdapter(Adapter):
                     chunk,
                     start=start.isoformat(),
                     end=end.isoformat(),
-                    auto_adjust=False,
+                    auto_adjust=True,
                     progress=False,
                     threads=True,
                     group_by="ticker",
@@ -166,6 +170,8 @@ class YFinanceAdapter(Adapter):
         """Return {symbol: [bar...]} of intraday bars for `date`. Each bar is
         {start (tz-aware), open, high, low, close, volume}. Resilient to gaps.
 
+        auto_adjust=True for consistency with the daily bars (adjusted prices).
+
         fd hygiene (intraday runs every few minutes for the whole session): pin the tz
         cache, reuse ONE requests.Session for the call, and close it; threads=False so no
         worker threads leak per-cycle handles."""
@@ -180,7 +186,7 @@ class YFinanceAdapter(Adapter):
             for i in range(0, len(symbols), _CHUNK):
                 chunk = symbols[i : i + _CHUNK]
                 kw = dict(start=date.isoformat(), end=end.isoformat(), interval=interval,
-                          auto_adjust=False, progress=False, threads=False, group_by="ticker")
+                          auto_adjust=True, progress=False, threads=False, group_by="ticker")
                 try:
                     df = yf.download(chunk, session=session, **kw)
                 except TypeError:           # session not supported in this yfinance version
