@@ -191,6 +191,11 @@ def parse_regime(postmortem_text: str) -> dict:
 
 def _build_digest_from_api(date: str) -> dict:
     scanner, _ = _get(f"/api/scanner?date={date}")
+    # /api/scanner returns {"watchlist": [...], "ranked": [...]} since the
+    # dashboard-search release (older builds returned a plain list).
+    if isinstance(scanner, dict):
+        scanner = (scanner.get("ranked") or []) + (scanner.get("watchlist") or [])
+    scanner = [r for r in (scanner or []) if isinstance(r, dict)]
     postmortem, _ = _get(f"/api/postmortem/{date}")
     regime = parse_regime(postmortem if isinstance(postmortem, str) else "")
 
