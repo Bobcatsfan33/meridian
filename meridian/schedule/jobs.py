@@ -6,12 +6,15 @@ Used by both `meridian schedule` (APScheduler) and directly for one-off runs.
 from __future__ import annotations
 
 import datetime as dt
+import logging
 import os
 from dataclasses import dataclass, field
 
 from ..config import Config
 
 _FLOW_PATTERNS = ["gamma_squeeze", "dark_pool_accumulation"]
+
+logger = logging.getLogger("meridian.jobs")
 
 
 @dataclass
@@ -24,6 +27,8 @@ class DayRunResult:
     flow_firings: int = 0
     explanations: int = 0
     labeled: int = 0
+    options_layer_ran: bool = False
+    options_coverage: int = 0
     steps: list[str] = field(default_factory=list)
 
 
@@ -44,7 +49,7 @@ def run_postclose(
     from ..engine.match import run_match
     from ..ingest.pipeline import run_ingest
     from ..options.ingest import run_options
-    from ..outputs.build import build_explanations
+    from ..outputs.build import build_explanations, write_digest
     from ..predict.label import label_date_range
 
     res = DayRunResult(target_date=target_date)
@@ -67,11 +72,26 @@ def run_postclose(
         run_featurize(cfg, target_date)                       # re-grade incl. dealer_pos
         res.flow_firings = run_match(cfg, target_date, pattern_ids=_FLOW_PATTERNS).n_firings
         res.steps.append("match:flow")
-    except Exception:  # options is enhancement-only; never fatal
-        pass
+        res.options_layer_ran = True
+    except Exception:  # options is enhancement-only; never fatal — but never silent either
+        res.options_layer_ran = False
+        logger.exception(
+            "options layer failed for %s; continuing without dealer_pos "
+            "(digest will carry options_layer_ran=False)", target_date)
 
-    res.explanations = len(build_explanations(cfg, target_date))
+    evidences = build_explanations(cfg, target_date)
+    res.explanations = len(evidences)
     res.steps.append("explanations")
+
+    # machine digest (feed/meridian-latest.json) with options status threaded through,
+    # so consumers can tell "no gamma squeezes" from "options layer never ran".
+    try:
+        digest = write_digest(cfg, target_date, evidences,
+                              options_layer_ran=res.options_layer_ran)
+        res.options_coverage = int(digest.get("options_coverage", 0))
+        res.steps.append("digest")
+    except Exception:  # digest is an output artifact; never fatal for the batch
+        logger.exception("digest build failed for %s", target_date)
 
     res.labeled = len(label_date_range(cfg, target_date, target_date))
     res.steps.append("label")

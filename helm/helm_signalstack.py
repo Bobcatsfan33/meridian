@@ -28,6 +28,17 @@ WARM-UP (never blocks trading; Helm falls back to base rules and logs "warming u
   - IV-rank needs >= 30 days of history per symbol, else iv_rank = null.
   - RVOL profile needs >= 10 sessions per symbol, else rvol_basis = "intraday_fallback"
     (current cumulative vs a flat same-bar-count expectation).
+
+v1.1 (2026-07-01 audit fixes):
+  - et_bucket is now DST-correct via zoneinfo (was hardcoded UTC-4; EST months
+    shifted every volume bucket by one hour and corrupted RVOL).
+    NOTE: delete helm-volprofile.json once after deploying this fix so the
+    profile rebuilds with correct bucket labels (mixed old/new labels otherwise).
+  - Coverage floor: if <70% of the universe returned data, breadth.posture is
+    forced to "unknown" (a partial Yahoo outage can no longer fabricate a regime).
+  - Session freshness: top-level "intraday_session" reports the ET date of the
+    bars used and whether they are live. At the 8:30 pre-market run, vwap/orb/
+    rvol describe the PRIOR session — Helm must treat them as context, not live state.
 """
 
 import argparse
@@ -40,9 +51,11 @@ import time
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
-UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 helm-signalstack/1.0"
+UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 helm-signalstack/1.1"
 HERE = os.path.dirname(os.path.abspath(__file__))
+ET_ZONE = ZoneInfo("America/New_York")
 
 # Shared Yahoo session: cookie jar + crumb. Yahoo's finance endpoints now
 # return 401 without a consent cookie and (for v7 options) a crumb token.
@@ -87,6 +100,8 @@ UNIVERSE = [
 IV_HISTORY_MIN_DAYS = 30
 IV_HISTORY_MAX_DAYS = 252
 VOLPROFILE_MIN_SESSIONS = 10
+COVERAGE_FLOOR = 0.70          # <70% of universe with data -> posture "unknown"
+LIVE_BAR_MAX_AGE_SEC = 20 * 60  # last bar older than this -> not a live session
 
 
 # --------------------------------------------------------------------------- IO
@@ -98,8 +113,7 @@ def _get_json(url, tries=3, pause=0.6):
                 return json.loads(r.read().decode("utf-8"))
         except Exception as e:  # noqa: BLE001
             last = e
-            _CRUMB_RESET = None  # noqa: F841  (crumb may have expired; refetch next call)
-            globals()["_CRUMB"] = None
+            globals()["_CRUMB"] = None  # crumb may have expired; refetch next call
             time.sleep(pause)
     raise last
 
@@ -139,10 +153,17 @@ def chart(symbol, interval, rng):
 
 
 def et_bucket(epoch):
-    """Map a UTC epoch to an ET 'HH:MM' 5-min bucket label (no tz libs:
-    US/Eastern = UTC-4 during DST, which covers regular trading months)."""
-    dt = datetime.fromtimestamp(epoch - 4 * 3600, tz=timezone.utc)
-    return dt.strftime("%H:%M")
+    """Map a UTC epoch to an ET 'HH:MM' 5-min bucket label.
+
+    v1.1: DST-correct via zoneinfo. The previous version hardcoded UTC-4,
+    which shifted every bucket by one hour during EST months (Nov-Mar) and
+    corrupted the time-normalized RVOL profile."""
+    return datetime.fromtimestamp(epoch, tz=ET_ZONE).strftime("%H:%M")
+
+
+def et_date(epoch):
+    """ET calendar date (YYYY-MM-DD) for a UTC epoch."""
+    return datetime.fromtimestamp(epoch, tz=ET_ZONE).strftime("%Y-%m-%d")
 
 
 def session_vwap(bars):
@@ -267,6 +288,7 @@ def build_state(symbols, state_dir):
     out = {}
     above_vwap = above_ma = counted = 0
     warming_iv = warming_rvol = False
+    last_bar_epoch = 0
 
     for s in symbols:
         try:
@@ -274,6 +296,8 @@ def build_state(symbols, state_dir):
             daily, _ = chart(s, "1d", "6mo")
             closes = [d["c"] for d in daily]
             price = intraday[-1]["c"] if intraday else (closes[-1] if closes else None)
+            if intraday:
+                last_bar_epoch = max(last_bar_epoch, intraday[-1]["t"])
             vwap = session_vwap(intraday)
             ma20, ma50 = sma(closes, 20), sma(closes, 50)
             ma20_prev = sma(closes[:-1], 20) if len(closes) > 20 else None
@@ -320,28 +344,46 @@ def build_state(symbols, state_dir):
         except Exception as e:  # noqa: BLE001
             out[s] = {"error": str(e)}
 
+    coverage = round(counted / len(symbols), 2) if symbols else 0.0
     avp = round(above_vwap / counted * 100, 1) if counted else None
     amp = round(above_ma / counted * 100, 1) if counted else None
+
+    # v1.1 coverage floor: a partial Yahoo outage must not fabricate a regime.
     posture = "unknown"
-    if avp is not None:
+    if avp is not None and coverage >= COVERAGE_FLOOR:
         posture = "risk_on" if avp > 60 else "risk_off" if avp < 40 else "mixed"
+
+    # v1.1 session freshness: are these bars from a live session right now,
+    # or from the prior session (e.g. the 8:30 pre-market run)?
+    bar_age = (time.time() - last_bar_epoch) if last_bar_epoch else None
+    intraday_session = {
+        "session_date_et": et_date(last_bar_epoch) if last_bar_epoch else None,
+        "last_bar_age_min": round(bar_age / 60.0, 1) if bar_age is not None else None,
+        "is_live_session": bool(bar_age is not None and bar_age <= LIVE_BAR_MAX_AGE_SEC),
+    }
 
     return {
         "source": "helm_signalstack",
+        "version": "1.1",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "universe_count": len(symbols),
+        "intraday_session": intraday_session,
         "breadth": {
             "above_vwap_pct": avp,
             "above_rising_20dma_pct": amp,
             "n": counted,
+            "coverage": coverage,
             "posture": posture,
         },
         "warming_up": {"iv_rank": warming_iv, "rvol_profile": warming_rvol},
         "notes": (
             "Free-data signal stack. breadth.posture: >60% above VWAP=risk_on, "
-            "<40%=risk_off, else mixed. iv_rank null => <30d history (skip IV-rank "
-            "gate, keep expected_move). rvol_basis 'intraday_fallback' => <10 "
-            "sessions of profile. expected_move = spot*IV*sqrt(DTE/365). "
+            "<40%=risk_off, else mixed; posture is 'unknown' when coverage<0.70 "
+            "(partial data must not set a regime). intraday_session.is_live_session "
+            "false => vwap/orb/rvol describe the PRIOR session (e.g. 8:30 pre-market "
+            "run) — treat as context, not live state. iv_rank null => <30d history "
+            "(skip IV-rank gate, keep expected_move). rvol_basis 'intraday_fallback' "
+            "=> <10 sessions of profile. expected_move = spot*IV*sqrt(DTE/365). "
             "This is signal INPUT only; Helm still requires a trigger and obeys RISK LIMITS."
         ),
         "symbols": out,
@@ -402,6 +444,7 @@ def main():
     b = state["breadth"]
     print(f"[ok] wrote {out}: posture={b['posture']} "
           f"above_vwap={b['above_vwap_pct']}% n={b['n']} "
+          f"coverage={b['coverage']} live={state['intraday_session']['is_live_session']} "
           f"warming={state['warming_up']}")
 
 

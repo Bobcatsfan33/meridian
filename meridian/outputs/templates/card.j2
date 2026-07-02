@@ -1,5 +1,7 @@
-{% if ev.get('proxy_data') %}
+{% if ev.get('data_source') == 'fixture' %}
 ⚠ PROXY DATA — synthetic option chain, NOT tradeable (use a live options source).
+{% elif ev.get('proxy_data') %}
+⚠ PROXY READ — price/volume inference only; no options data behind this pattern.
 {% endif %}
 {% if ev.get('ad_hoc') %}
 ◆ Ad-hoc — not part of the tracked universe.

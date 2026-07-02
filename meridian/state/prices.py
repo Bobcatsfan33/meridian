@@ -17,7 +17,11 @@ _CHUNK = 100
 
 
 def fetch_yf_window(symbols: list[str], start: dt.date, end: dt.date) -> PriceWindow:
-    """Daily OHLCV for `symbols` over [start, end]. Resilient to per-symbol gaps."""
+    """Daily OHLCV for `symbols` over [start, end]. Resilient to per-symbol gaps.
+
+    auto_adjust=True: bars are split/dividend-adjusted so trailing returns are real.
+    Unadjusted windows turn splits/spinoffs into fabricated abnormal moves (a 1:2
+    split reads as -50%) and corrupt baselines, betas, and residuals downstream."""
     import yfinance as yf
 
     out: PriceWindow = {}
@@ -28,7 +32,7 @@ def fetch_yf_window(symbols: list[str], start: dt.date, end: dt.date) -> PriceWi
                 chunk,
                 start=start.isoformat(),
                 end=(end + dt.timedelta(days=1)).isoformat(),
-                auto_adjust=False,
+                auto_adjust=True,
                 progress=False,
                 threads=True,
                 group_by="ticker",
