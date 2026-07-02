@@ -37,3 +37,7 @@ line-length = 100
 
 [tool.pytest.ini_options]
 markers = ["network: hits the network; skipped when offline / rate-limited"]
+
+[tool.ruff.lint]
+# `l` is used for "low" in OHLC price math; allow the short name there.
+ignore = ["E741"]
